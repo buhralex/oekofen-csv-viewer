@@ -48,7 +48,7 @@
       align-items: center;
       justify-content: center;
       background: var(--bg-primary);
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, border-color 0.15s, background-color 0.15s;
       z-index: 10;
     }
 
@@ -412,33 +412,50 @@
         'File: <strong>' + filename + '</strong>';
     }
 
-    // ─── Drag-and-drop handlers (stub — file loading in Plan 02) ──
+    // ─── Navigation guard ─────────────────────────────────────────
+    // Prevents browser from navigating away when user drops a file
+    // anywhere on the page (outside the drop zone).
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      // File dropped outside the designated drop zone — ignore silently.
+      // The drop zone has its own handler that calls handleFileDrop().
+    });
+
+    // ─── Drop zone drag handlers ──────────────────────────────────
+    // Drag depth counter prevents visual flicker when cursor moves
+    // between child elements inside the drop zone.
+    let dragDepth = 0;
     const dropZone = document.getElementById('drop-zone');
 
-    dropZone.addEventListener('dragenter', e => {
+    dropZone.addEventListener('dragenter', (e) => {
       e.preventDefault();
+      dragDepth++;
       dropZone.classList.add('drag-over');
     });
 
-    dropZone.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropZone.classList.add('drag-over');
-    });
-
-    dropZone.addEventListener('dragleave', e => {
-      if (!dropZone.contains(e.relatedTarget)) {
+    dropZone.addEventListener('dragleave', () => {
+      dragDepth--;
+      if (dragDepth === 0) {
         dropZone.classList.remove('drag-over');
       }
     });
 
-    dropZone.addEventListener('drop', e => {
+    dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragDepth = 0;
       dropZone.classList.remove('drag-over');
-      // File processing implemented in Plan 02
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        setStatus('File drop received — processing in Plan 02');
-      }
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileDrop(file);
     });
 
     // ─── Pick-file button ─────────────────────────────────────────
