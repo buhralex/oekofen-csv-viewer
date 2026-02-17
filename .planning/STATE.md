@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 1 of 3 in current phase (01-01 complete, 01-02 and 01-03 remaining)
+Plan: 2 of 3 in current phase (01-01 and 01-02 complete, 01-03 remaining)
 Status: In progress
-Last activity: 2026-02-17 — 01-01 complete: scaffold, vendor libs, AppState singleton
+Last activity: 2026-02-17 — 01-02 complete: file loading, navigation guard, toast validation, LOAD-01/02/03 satisfied
 
-Progress: [█░░░░░░░░░] 7%
+Progress: [██░░░░░░░░] 14%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 15 min
-- Total execution time: 0.25 hours
+- Total plans completed: 2
+- Average duration: ~23 min
+- Total execution time: ~0.75 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 1/3 | 15 min | 15 min |
+| 1. Foundation | 2/3 | ~45 min | ~23 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (15 min)
+- Last 5 plans: 01-01 (15 min), 01-02 (~30 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -49,6 +49,10 @@ Recent decisions affecting current work:
 - [01-01]: CSS custom properties established as theming system — all plans extend :root vars
 - [01-01]: UI transition functions showDropZone() / showAppView(filename) defined as the state transition pair for Plans 02+
 - [01-01]: showToast() / setStatus() established as feedback primitives for all subsequent plans
+- [01-02]: Window-level dragover+drop guard must attach to window (not drop zone) — only then does LOAD-03 (outside-zone drops) work
+- [01-02]: dragDepth counter pattern used to prevent flicker — increment on dragenter, decrement on dragleave, remove CSS class only at zero
+- [01-02]: handleFileDrop() is the single validation entry point for both drag and file picker paths
+- [01-02]: onFileAccepted(file) is the handoff boundary — Plan 03 replaces the stub body with the parse pipeline
 
 ### Pending Todos
 
@@ -63,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 01-01-PLAN.md — scaffold, vendor libs, AppState complete. Next: 01-02 (file loading).
+Stopped at: Completed 01-02-PLAN.md — file loading layer complete, LOAD-01/02/03 verified. Next: 01-03 (CSV parse/normalize pipeline).
 Resume file: None
