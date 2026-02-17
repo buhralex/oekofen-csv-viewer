@@ -45,8 +45,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Interface
 
-- [ ] **INTF-01**: UI is in English
-- [ ] **INTF-02**: Original German CSV parameter names are displayed (not translated)
+- [x] **INTF-01**: UI is in English
+- [x] **INTF-02**: Original German CSV parameter names are displayed (not translated)
 
 ## v2 Requirements
 
@@ -94,8 +94,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PARS-03 | Phase 1 | Pending |
 | PARS-04 | Phase 1 | Pending |
 | PARS-05 | Phase 1 | Pending |
-| INTF-01 | Phase 1 | Pending |
-| INTF-02 | Phase 1 | Pending |
+| INTF-01 | Phase 1 | Complete (01-01) |
+| INTF-02 | Phase 1 | Complete (01-01) |
 | CHRT-01 | Phase 2 | Pending |
 | CHRT-02 | Phase 2 | Pending |
 | CHRT-03 | Phase 2 | Pending |
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after roadmap creation — all 23 requirements mapped*
+*Last updated: 2026-02-17 after 01-01 execution — INTF-01, INTF-02 complete*

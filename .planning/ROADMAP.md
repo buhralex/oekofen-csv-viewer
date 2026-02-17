@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold: single HTML file, vendored uPlot 1.6.32 and PapaParse 5.5.3, AppState singleton
+- [x] 01-01-PLAN.md — Project scaffold: single HTML file, vendored uPlot 1.6.32 and PapaParse 5.5.3, AppState singleton
 - [ ] 01-02-PLAN.md — File loading: drag-and-drop zone, file picker button, window-level navigation guard, toast error system
 - [ ] 01-03-PLAN.md — CSV parse and normalize pipeline: Windows-1252 decoding, semicolon delimiter, German decimal converter, UTC timestamp reconstruction, columnar data model
 
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 1/3 | In progress | - |
 | 2. Chart Rendering | 0/3 | Not started | - |
 | 3. Navigation and Interaction | 0/4 | Not started | - |
 | 4. Parameter Management | 0/4 | Not started | - |

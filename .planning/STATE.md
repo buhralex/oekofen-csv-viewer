@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 0 of 3 in current phase (all 3 plans created, ready to execute)
-Status: Ready to execute
-Last activity: 2026-02-17 — Phase 1 plans created and verified (01-01, 01-02, 01-03)
+Plan: 1 of 3 in current phase (01-01 complete, 01-02 and 01-03 remaining)
+Status: In progress
+Last activity: 2026-02-17 — 01-01 complete: scaffold, vendor libs, AppState singleton
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 7%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 15 min
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1. Foundation | 1/3 | 15 min | 15 min |
 
 **Recent Trend:**
-- Last 5 plans: none yet
+- Last 5 plans: 01-01 (15 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -45,10 +45,14 @@ Recent decisions affecting current work:
 - [Init]: Web-based client-side only approach confirmed; uPlot 1.6.32 + PapaParse 5.5.3 selected as the stack
 - [Init]: One-way data pipeline architecture mandated: File drop → Parse → Normalize → Data Model → View → Chart
 - [Init]: Phase 1 must be verified against a real OekoFEN CSV file before Phase 2 begins — normalizer is highest-risk component
+- [01-01]: Dark navy theme (#1a1a2e, #4fc3f7 accent) chosen for chart readability
+- [01-01]: CSS custom properties established as theming system — all plans extend :root vars
+- [01-01]: UI transition functions showDropZone() / showAppView(filename) defined as the state transition pair for Plans 02+
+- [01-01]: showToast() / setStatus() established as feedback primitives for all subsequent plans
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
@@ -59,5 +63,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 1 planning complete — 3 PLAN.md files created and verified. Ready to execute.
+Stopped at: Completed 01-01-PLAN.md — scaffold, vendor libs, AppState complete. Next: 01-02 (file loading).
 Resume file: None
