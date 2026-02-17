@@ -458,16 +458,42 @@
       if (file) handleFileDrop(file);
     });
 
-    // ─── Pick-file button ─────────────────────────────────────────
-    document.getElementById('pick-file-btn').addEventListener('click', () => {
-      document.getElementById('file-input').click();
-    });
-
-    document.getElementById('file-input').addEventListener('change', e => {
-      // File processing implemented in Plan 02
-      if (e.target.files.length > 0) {
-        setStatus('File selected — processing in Plan 02');
+    // ─── File type validation ─────────────────────────────────────
+    function handleFileDrop(file) {
+      const name = file.name.toLowerCase();
+      if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg')) {
+        showToast('This is a graph image. Drop the CSV file (touch_*.csv) instead', 'warning');
+        return;
       }
+      if (!name.endsWith('.csv')) {
+        showToast('Only CSV files are accepted. Please select a touch_*.csv file.', 'error');
+        return;
+      }
+      onFileAccepted(file);
+    }
+
+    // ─── File accepted — handoff to parse pipeline ────────────────
+    // Plan 03 replaces this stub with the full CSV parse/normalize pipeline.
+    function onFileAccepted(file) {
+      // Transition UI: collapse drop zone, show compact header
+      showAppView(file.name);
+      AppState.filename = file.name;
+
+      // STUB: Plan 03 will implement actual parsing here
+      console.log('[onFileAccepted] File received:', file.name, file.size, 'bytes');
+      setStatus('File accepted: ' + file.name + ' — parsing not yet implemented (Plan 03)');
+    }
+
+    // ─── Pick-file button (LOAD-02) ───────────────────────────────
+    const pickBtn = document.getElementById('pick-file-btn');
+    const fileInput = document.getElementById('file-input');
+
+    pickBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) handleFileDrop(file);
+      fileInput.value = ''; // reset so same file can be re-selected
     });
 
     // ─── Load Another button ──────────────────────────────────────
