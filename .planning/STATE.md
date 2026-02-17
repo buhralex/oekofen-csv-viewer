@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 — Roadmap created, all 23 v1 requirements mapped to 4 phases
+Plan: 0 of 3 in current phase (all 3 plans created, ready to execute)
+Status: Ready to execute
+Last activity: 2026-02-17 — Phase 1 plans created and verified (01-01, 01-02, 01-03)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,11 +52,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1]: Actual OekoFEN CSV schema must be validated on day one — column names, timestamp format, and encoding assumptions are based on the project description, not a real file. Normalizer design may change if real file differs.
-- [Phase 1]: Pre-built view column lists (Boiler, HK1, WW1, Buffer, PE1) require actual column names from a real CSV — these cannot be hardcoded until the file is examined.
+- [Phase 1 RESOLVED]: CSV schema validated — ISO-8859-1, semicolon delimiter, trailing semicolons, trailing spaces in column names. Plans reflect actual file format.
+- [Phase 1 RESOLVED]: Column group rules hardcoded from real file inspection — HK1, WW1, PU1, PE1 prefix-based; Boiler explicit list.
+- [Advisory]: PARS-03 implemented via TextDecoder('windows-1252') not BOM stripping — real file has no BOM. Excel-generated UTF-8 BOM files not handled (future concern if needed).
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Roadmap creation complete — ROADMAP.md, STATE.md written, REQUIREMENTS.md traceability updated
+Stopped at: Phase 1 planning complete — 3 PLAN.md files created and verified. Ready to execute.
 Resume file: None
