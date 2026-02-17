@@ -29,12 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Dropping a file outside the designated drop zone does not trigger browser navigation
   4. After loading a real OekoFEN CSV, the first parsed column header equals `AT [C]` exactly (no invisible BOM prefix), German decimal values like `23,5` parse to `23.5`, and timestamps reconstruct correctly as `00:00` to `23:59` independent of system timezone
   5. The UI displays in English and shows original German CSV parameter names (e.g., `HK1 VL Ist[C]`) without translation
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Project scaffold — single HTML file structure, vendored uPlot and PapaParse, app state store skeleton
-- [ ] 01-02: File loading — drag-and-drop zone, file picker button, browser-navigation guard for outside drops
-- [ ] 01-03: CSV parse and normalize pipeline — BOM strip, PapaParse with semicolon delimiter, German decimal converter, timestamp reconstruction, columnar data model
+- [ ] 01-01-PLAN.md — Project scaffold: single HTML file, vendored uPlot 1.6.32 and PapaParse 5.5.3, AppState singleton
+- [ ] 01-02-PLAN.md — File loading: drag-and-drop zone, file picker button, window-level navigation guard, toast error system
+- [ ] 01-03-PLAN.md — CSV parse and normalize pipeline: Windows-1252 decoding, semicolon delimiter, German decimal converter, UTC timestamp reconstruction, columnar data model
 
 ### Phase 2: Chart Rendering
 **Goal**: Users can see loaded CSV data rendered as interactive line charts with correct axis architecture and visual distinction between continuous and binary series
