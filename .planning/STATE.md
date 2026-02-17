@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation)
-Plan: 2 of 3 in current phase (01-01 and 01-02 complete, 01-03 remaining)
-Status: In progress
-Last activity: 2026-02-17 — 01-02 complete: file loading, navigation guard, toast validation, LOAD-01/02/03 satisfied
+Phase: 1 of 4 (Foundation) — COMPLETE
+Plan: 3 of 3 in current phase (01-01, 01-02, and 01-03 all complete)
+Status: Phase 1 complete — ready for Phase 2
+Last activity: 2026-02-17 — 01-03 complete: full CSV parse/normalize pipeline verified against real OekoFEN file, all PARS requirements satisfied
 
-Progress: [██░░░░░░░░] 14%
+Progress: [███░░░░░░░] 21%
 
 ## Performance Metrics
 
@@ -27,10 +27,10 @@ Progress: [██░░░░░░░░] 14%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 2/3 | ~45 min | ~23 min |
+| 1. Foundation | 3/3 | ~80 min | ~27 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (15 min), 01-02 (~30 min)
+- Last 5 plans: 01-01 (15 min), 01-02 (~30 min), 01-03 (~35 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -53,6 +53,11 @@ Recent decisions affecting current work:
 - [01-02]: dragDepth counter pattern used to prevent flicker — increment on dragenter, decrement on dragleave, remove CSS class only at zero
 - [01-02]: handleFileDrop() is the single validation entry point for both drag and file picker paths
 - [01-02]: onFileAccepted(file) is the handoff boundary — Plan 03 replaces the stub body with the parse pipeline
+- [01-03]: TextDecoder('windows-1252') required — real OekoFEN file is ISO-8859-1 with no BOM; UTF-8 produces mojibake
+- [01-03]: IGNORED_COLUMNS Set(['Fehler1','Fehler2','Fehler3','Zubrp1 Pumpe']) — excluded at parse time, 64 data columns result from 70 raw minus 2 timestamp minus 4 ignored
+- [01-03]: BINARY_COLUMNS Set(['BR','Sperrzeit']) — type:'discrete' signals Phase 2 to use step chart rendering
+- [01-03]: PE1 group unified as 'Pellet Unit (PE1)', not split — per CONTEXT.md locked decision
+- [01-03]: AppState.dataModel shape locked: { isOekoFEN, timestamps[], columns[], parseIssues, rowCount } — Phase 2 consumes this directly
 
 ### Pending Todos
 
@@ -67,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 01-02-PLAN.md — file loading layer complete, LOAD-01/02/03 verified. Next: 01-03 (CSV parse/normalize pipeline).
+Stopped at: Completed 01-03-PLAN.md — CSV parse/normalize pipeline verified against real OekoFEN file. Phase 1 complete. Next: Phase 2 (Chart Rendering).
 Resume file: None

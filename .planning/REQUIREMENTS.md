@@ -9,17 +9,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### File Loading
 
-- [ ] **LOAD-01**: User can load a CSV file via drag-and-drop onto the page
-- [ ] **LOAD-02**: User can load a CSV file via a file picker button
-- [ ] **LOAD-03**: Dropping a file outside the drop zone does not navigate the browser away
+- [x] **LOAD-01**: User can load a CSV file via drag-and-drop onto the page
+- [x] **LOAD-02**: User can load a CSV file via a file picker button
+- [x] **LOAD-03**: Dropping a file outside the drop zone does not navigate the browser away
 
 ### CSV Parsing
 
-- [ ] **PARS-01**: Parser handles semicolon-delimited CSV format
-- [ ] **PARS-02**: Parser converts German locale decimals (comma separator) to correct numeric values
-- [ ] **PARS-03**: Parser strips UTF-8 BOM from file start without corrupting the first column header
-- [ ] **PARS-04**: Parser extracts date (DD.MM.YYYY) and time (HH:MM:SS) columns into timezone-safe timestamps
-- [ ] **PARS-05**: Parser extracts column metadata (name, unit, group) from header strings like `HK1 VL Ist[C]`
+- [x] **PARS-01**: Parser handles semicolon-delimited CSV format
+- [x] **PARS-02**: Parser converts German locale decimals (comma separator) to correct numeric values
+- [x] **PARS-03**: Parser strips UTF-8 BOM from file start without corrupting the first column header
+- [x] **PARS-04**: Parser extracts date (DD.MM.YYYY) and time (HH:MM:SS) columns into timezone-safe timestamps
+- [x] **PARS-05**: Parser extracts column metadata (name, unit, group) from header strings like `HK1 VL Ist[C]`
 
 ### Chart Rendering
 
@@ -86,14 +86,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LOAD-01 | Phase 1 | Pending |
-| LOAD-02 | Phase 1 | Pending |
-| LOAD-03 | Phase 1 | Pending |
-| PARS-01 | Phase 1 | Pending |
-| PARS-02 | Phase 1 | Pending |
-| PARS-03 | Phase 1 | Pending |
-| PARS-04 | Phase 1 | Pending |
-| PARS-05 | Phase 1 | Pending |
+| LOAD-01 | Phase 1 | Complete (01-02) |
+| LOAD-02 | Phase 1 | Complete (01-02) |
+| LOAD-03 | Phase 1 | Complete (01-02) |
+| PARS-01 | Phase 1 | Complete (01-03) |
+| PARS-02 | Phase 1 | Complete (01-03) |
+| PARS-03 | Phase 1 | Complete (01-03) |
+| PARS-04 | Phase 1 | Complete (01-03) |
+| PARS-05 | Phase 1 | Complete (01-03) |
 | INTF-01 | Phase 1 | Complete (01-01) |
 | INTF-02 | Phase 1 | Complete (01-01) |
 | CHRT-01 | Phase 2 | Pending |
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after 01-01 execution — INTF-01, INTF-02 complete*
+*Last updated: 2026-02-17 after 01-03 execution — Phase 1 complete: LOAD-01/02/03, PARS-01/02/03/04/05, INTF-01/02 all complete*

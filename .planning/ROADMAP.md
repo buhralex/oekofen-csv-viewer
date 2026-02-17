@@ -12,7 +12,7 @@ Four phases built on a strict one-way data pipeline. Phase 1 establishes the pro
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Project scaffold, file loading, and the verified CSV parse/normalize pipeline
+- [x] **Phase 1: Foundation** - Project scaffold, file loading, and the verified CSV parse/normalize pipeline
 - [ ] **Phase 2: Chart Rendering** - uPlot instance with axis architecture, step rendering for binary columns, and series builder
 - [ ] **Phase 3: Navigation and Interaction** - Zoom (drag + scroll), cursor crosshair with tooltip, and minimap overview
 - [ ] **Phase 4: Parameter Management** - Pre-built views, series show/hide, custom parameter selection, and localStorage persistence
@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold: single HTML file, vendored uPlot 1.6.32 and PapaParse 5.5.3, AppState singleton
 - [x] 01-02-PLAN.md — File loading: drag-and-drop zone, file picker button, window-level navigation guard, toast error system
-- [ ] 01-03-PLAN.md — CSV parse and normalize pipeline: Windows-1252 decoding, semicolon delimiter, German decimal converter, UTC timestamp reconstruction, columnar data model
+- [x] 01-03-PLAN.md — CSV parse and normalize pipeline: Windows-1252 decoding, semicolon delimiter, German decimal converter, UTC timestamp reconstruction, columnar data model
 
 ### Phase 2: Chart Rendering
 **Goal**: Users can see loaded CSV data rendered as interactive line charts with correct axis architecture and visual distinction between continuous and binary series
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 2/3 | In progress | - |
+| 1. Foundation | 3/3 | Complete | 2026-02-17 |
 | 2. Chart Rendering | 0/3 | Not started | - |
 | 3. Navigation and Interaction | 0/4 | Not started | - |
 | 4. Parameter Management | 0/4 | Not started | - |
