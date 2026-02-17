@@ -184,9 +184,9 @@
       position: fixed;
       top: 50px; left: 0; right: 0;
       display: none;
-      padding: 16px 20px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
+      background: #16213e;
+      border-bottom: 1px solid #2d2d4e;
+      padding: 8px 16px;
       z-index: 15;
     }
 
@@ -194,46 +194,16 @@
       display: block;
     }
 
-    .summary-grid {
+    .summary-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
+      gap: 16px;
+      font-size: 13px;
+      color: #b0bec5;
     }
 
-    .summary-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .summary-item .label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
-
-    .summary-item .value {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .summary-groups {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
-    }
-
-    .group-badge {
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 500;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent-border);
-      color: var(--accent);
+    .summary-bar strong {
+      color: #81d4fa;
     }
 
     /* ─── Chart Area ─────────────────────────────────────────── */
@@ -472,16 +442,265 @@
       onFileAccepted(file);
     }
 
-    // ─── File accepted — handoff to parse pipeline ────────────────
-    // Plan 03 replaces this stub with the full CSV parse/normalize pipeline.
-    function onFileAccepted(file) {
-      // Transition UI: collapse drop zone, show compact header
-      showAppView(file.name);
-      AppState.filename = file.name;
+    // ─── CSV Parse and Normalize Pipeline (Plan 03) ───────────────
 
-      // STUB: Plan 03 will implement actual parsing here
-      console.log('[onFileAccepted] File received:', file.name, file.size, 'bytes');
-      setStatus('File accepted: ' + file.name + ' — parsing not yet implemented (Plan 03)');
+    // STEP 1 — Read as ArrayBuffer, decode as Windows-1252
+    // PARS-03: The real OekoFEN CSV has NO BOM and is ISO-8859-1 encoded.
+    // Using TextDecoder('windows-1252') correctly handles Latin-1 extended chars
+    // (°, ä, ö, ü). UTF-8 would produce mojibake (Â°C instead of °C).
+    async function readFileAsText(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      return new TextDecoder('windows-1252').decode(arrayBuffer);
+    }
+
+    // STEP 2 — PapaParse with semicolon delimiter
+    // PARS-01: semicolon delimiter
+    function parseCSVString(csvString) {
+      return Papa.parse(csvString, {
+        delimiter: ';',
+        header: true,
+        skipEmptyLines: true,
+      });
+    }
+
+    // STEP 3 — Normalize headers (trim + drop empty trailing column)
+    // Trailing semicolon creates a column with key "" or " " — filter it out.
+    // Column names also have trailing spaces — trim all.
+    function normalizeHeaders(papaResult) {
+      const rawFields = papaResult.meta.fields;
+      const goodFields = rawFields
+        .map(f => f.trim())
+        .filter(f => f !== '');
+
+      // Rebuild data array with trimmed keys, dropping the empty column
+      const rows = papaResult.data.map(row => {
+        const normalized = {};
+        rawFields.forEach(rawKey => {
+          const trimmed = rawKey.trim();
+          if (trimmed !== '') {
+            normalized[trimmed] = row[rawKey];
+          }
+        });
+        return normalized;
+      });
+
+      return { fields: goodFields, rows };
+    }
+
+    // STEP 4 — Parse German decimals
+    // PARS-02: German locale uses comma as decimal separator.
+    // parseFloat("1,4") returns 1 in Chrome (stops at comma).
+    // Must replace comma with dot before parsing.
+    // Returns null for empty/whitespace strings (gap in chart data).
+    function parseGermanFloat(str) {
+      if (!str || str.trim() === '') return null;
+      const val = parseFloat(str.trim().replace(',', '.'));
+      return isNaN(val) ? null : val;
+    }
+
+    // Classify whether a raw value is an integer (no comma, no dot, digits only)
+    function parseGermanValue(str) {
+      if (!str || str.trim() === '') return null;
+      const trimmed = str.trim();
+      // Integer check: digits only, possibly negative (like -2147483648)
+      if (/^-?\d+$/.test(trimmed)) {
+        const intVal = parseInt(trimmed, 10);
+        return isNaN(intVal) ? null : intVal;
+      }
+      // Float with German decimal comma
+      return parseGermanFloat(trimmed);
+    }
+
+    // STEP 5 — Build Unix timestamps from Datum + Zeit columns
+    // PARS-04: Timezone-safe timestamp reconstruction.
+    // Always parse from row's Datum and Zeit values, never from filename.
+    // Last row may cross midnight to the next calendar day.
+    // Returns Unix seconds (not milliseconds — uPlot uses seconds).
+    function buildUnixTimestamp(datumStr, zeitStr) {
+      // Datum format: DD.MM.YYYY (e.g., "16.02.2026")
+      // Zeit format:  HH:MM:SS  (e.g., "00:02:44")
+      const [day, month, year] = datumStr.trim().split('.');
+      const [hour, min, sec] = zeitStr.trim().split(':');
+      // Date.UTC avoids local timezone offset — result is always UTC
+      return Date.UTC(+year, +month - 1, +day, +hour, +min, +sec) / 1000;
+    }
+
+    // STEP 6 — Column header parsing and group classification
+    // PARS-05: Parse unit from column name like "AT [°C]" or "HK1 VL Ist[°C]"
+    // Returns { displayName, unit }
+    function parseColumnHeader(rawName) {
+      // Match optional space before bracket: "AT [°C]" or "HK1 VL Ist[°C]"
+      const match = rawName.match(/^(.+?)\s*\[([^\]]+)\]\s*$/);
+      if (match) {
+        return { displayName: rawName, unit: match[2].trim() };
+      }
+      return { displayName: rawName, unit: null };
+    }
+
+    // Per CONTEXT.md group rules (LOCKED USER DECISION):
+    // Boiler: AT, ATakt, KT Ist, KT Soll, BR, Sperrzeit, PE1_BR1
+    // Heating Circuit (HK1): starts with HK1
+    // Hot Water (WW1): starts with WW1
+    // Buffer (PU1): starts with PU1
+    // Pellet Unit (PE1): starts with PE1 (kept as one group — NOT split)
+    // IGNORED: Fehler1, Fehler2, Fehler3, Zubrp1 Pumpe, '' (empty)
+    const IGNORED_COLUMNS = new Set(['Fehler1', 'Fehler2', 'Fehler3', 'Zubrp1 Pumpe']);
+    const BINARY_COLUMNS = new Set(['BR', 'Sperrzeit']);
+
+    function classifyColumn(rawName) {
+      // Extract just the name part (without unit) for group matching
+      const namePart = rawName.match(/^(.+?)\s*(?:\[|$)/)?.[1]?.trim() ?? rawName;
+
+      if (IGNORED_COLUMNS.has(namePart)) return null; // excluded
+      if (namePart === 'Datum' || namePart === 'Zeit') return 'timestamp'; // X-axis
+
+      let group;
+      if (namePart.startsWith('HK1')) group = 'Heating Circuit (HK1)';
+      else if (namePart.startsWith('WW1')) group = 'Hot Water (WW1)';
+      else if (namePart.startsWith('PU1')) group = 'Buffer (PU1)';
+      else if (namePart.startsWith('PE1')) group = 'Pellet Unit (PE1)';
+      else group = 'Boiler'; // AT, ATakt, KT Ist/Soll, BR, Sperrzeit, PE1_BR1, others
+
+      const type = BINARY_COLUMNS.has(namePart) ? 'discrete' : 'continuous';
+      return { group, type };
+    }
+
+    // STEP 7 — Build the columnar data model
+    function buildDataModel(fields, rows) {
+      const datumField = fields.find(f => f === 'Datum');
+      const zeitField = fields.find(f => f === 'Zeit');
+
+      if (!datumField || !zeitField) {
+        return { isOekoFEN: false, timestamps: [], columns: [] };
+      }
+
+      // Build timestamps array (Unix seconds, UTC)
+      const timestamps = rows.map(row =>
+        buildUnixTimestamp(row['Datum'], row['Zeit'])
+      );
+
+      // Build column descriptors for all non-timestamp, non-ignored columns
+      const columns = [];
+      let parseIssues = 0;
+
+      for (const rawName of fields) {
+        const classification = classifyColumn(rawName);
+        if (!classification || classification === 'timestamp') continue;
+
+        const { displayName, unit } = parseColumnHeader(rawName);
+        const data = rows.map(row => {
+          const val = parseGermanValue(row[rawName]);
+          if (val === null && row[rawName] && row[rawName].trim() !== '') {
+            parseIssues++;
+          }
+          return val;
+        });
+
+        columns.push({
+          rawName,
+          displayName,   // same as rawName — German names preserved, no translation (INTF-02)
+          unit,
+          group: classification.group,
+          type: classification.type,
+          data,
+        });
+      }
+
+      return {
+        isOekoFEN: true,
+        timestamps,
+        columns,
+        parseIssues,
+        rowCount: rows.length,
+      };
+    }
+
+    // STEP 9 — Data summary panel (shown after load)
+    function showDataSummary(dataModel, filename) {
+      const summary = document.getElementById('data-summary');
+      summary.classList.add('visible');
+
+      // Group breakdown
+      const groups = {};
+      for (const col of dataModel.columns) {
+        groups[col.group] = (groups[col.group] || 0) + 1;
+      }
+      const groupLines = Object.entries(groups)
+        .map(([g, n]) => `${g}: ${n} columns`)
+        .join(' | ');
+
+      // Time range
+      const ts = dataModel.timestamps;
+      const firstDate = ts.length > 0 ? new Date(ts[0] * 1000).toUTCString() : 'N/A';
+      const lastDate = ts.length > 0 ? new Date(ts[ts.length - 1] * 1000).toUTCString() : 'N/A';
+
+      summary.innerHTML = `
+        <div class="summary-bar">
+          <span><strong>File:</strong> ${filename}</span>
+          <span><strong>Rows:</strong> ${dataModel.rowCount}</span>
+          <span><strong>Columns:</strong> ${dataModel.columns.length}</span>
+          <span><strong>Time:</strong> ${firstDate} &ndash; ${lastDate}</span>
+          <span><strong>Groups:</strong> ${groupLines}</span>
+        </div>
+      `;
+    }
+
+    // STEP 8 — Full pipeline entry point (replaces Plan 02 stub)
+    async function onFileAccepted(file) {
+      // Transition UI
+      document.getElementById('drop-zone').style.display = 'none';
+      document.getElementById('app-header').classList.add('visible');
+      document.getElementById('header-filename').innerHTML =
+        'File: <strong>' + file.name + '</strong>';
+      setStatus('Loading\u2026');
+
+      try {
+        // 1. Read as Windows-1252 (ISO-8859-1)
+        const csvString = await readFileAsText(file);
+
+        // 2. Parse with PapaParse (semicolon delimiter)
+        const papaResult = parseCSVString(csvString);
+
+        // 3. Normalize: trim headers, drop empty trailing column
+        const { fields, rows } = normalizeHeaders(papaResult);
+
+        // 4 + 5 + 6 + 7. Build data model (converts decimals, timestamps, classifies columns)
+        const dataModel = buildDataModel(fields, rows);
+
+        // Warn if not OekoFEN data (missing Datum/Zeit), but abort parse
+        if (!dataModel.isOekoFEN) {
+          showToast("This doesn't look like OekoFEN data \u2014 missing Datum/Zeit columns. Parsing aborted.", 'warning');
+          setStatus('Parse failed: no Datum/Zeit columns.');
+          return;
+        }
+
+        // Detect non-OekoFEN CSV (has Datum/Zeit but no AT column) — warn but proceed
+        const hasAT = dataModel.columns.some(c => c.rawName === 'AT [\u00b0C]' || c.rawName.trim() === 'AT');
+        if (!hasAT) {
+          showToast("This doesn't look like OekoFEN data, but proceeding with parsing.", 'warning');
+        }
+
+        // Store in AppState
+        AppState.dataModel = dataModel;
+        AppState.filename = file.name;
+        // Extract date from filename if possible (touch_YYYYMMDD.csv)
+        const dateMatch = file.name.match(/(\d{8})/);
+        AppState.fileDate = dateMatch ? dateMatch[1] : null;
+
+        // Show data summary
+        showDataSummary(dataModel, file.name);
+
+        // Update status bar
+        const issueText = dataModel.parseIssues > 0
+          ? ` \u2014 ${dataModel.parseIssues} rows had parse issues`
+          : '';
+        setStatus(`Loaded ${dataModel.rowCount} rows, ${dataModel.columns.length} columns${issueText}`);
+
+      } catch (err) {
+        console.error('[onFileAccepted] Error:', err);
+        showToast('Failed to load file: ' + err.message, 'error');
+        setStatus('Error: ' + err.message);
+      }
     }
 
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
