@@ -86,35 +86,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LOAD-01 | — | Pending |
-| LOAD-02 | — | Pending |
-| LOAD-03 | — | Pending |
-| PARS-01 | — | Pending |
-| PARS-02 | — | Pending |
-| PARS-03 | — | Pending |
-| PARS-04 | — | Pending |
-| PARS-05 | — | Pending |
-| CHRT-01 | — | Pending |
-| CHRT-02 | — | Pending |
-| CHRT-03 | — | Pending |
-| CHRT-04 | — | Pending |
-| NAVG-01 | — | Pending |
-| NAVG-02 | — | Pending |
-| NAVG-03 | — | Pending |
-| NAVG-04 | — | Pending |
-| NAVG-05 | — | Pending |
-| PARM-01 | — | Pending |
-| PARM-02 | — | Pending |
-| PARM-03 | — | Pending |
-| PARM-04 | — | Pending |
-| INTF-01 | — | Pending |
-| INTF-02 | — | Pending |
+| LOAD-01 | Phase 1 | Pending |
+| LOAD-02 | Phase 1 | Pending |
+| LOAD-03 | Phase 1 | Pending |
+| PARS-01 | Phase 1 | Pending |
+| PARS-02 | Phase 1 | Pending |
+| PARS-03 | Phase 1 | Pending |
+| PARS-04 | Phase 1 | Pending |
+| PARS-05 | Phase 1 | Pending |
+| INTF-01 | Phase 1 | Pending |
+| INTF-02 | Phase 1 | Pending |
+| CHRT-01 | Phase 2 | Pending |
+| CHRT-02 | Phase 2 | Pending |
+| CHRT-03 | Phase 2 | Pending |
+| CHRT-04 | Phase 2 | Pending |
+| NAVG-01 | Phase 3 | Pending |
+| NAVG-02 | Phase 3 | Pending |
+| NAVG-03 | Phase 3 | Pending |
+| NAVG-04 | Phase 3 | Pending |
+| NAVG-05 | Phase 3 | Pending |
+| PARM-01 | Phase 4 | Pending |
+| PARM-02 | Phase 4 | Pending |
+| PARM-03 | Phase 4 | Pending |
+| PARM-04 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after initial definition*
+*Last updated: 2026-02-17 after roadmap creation — all 23 requirements mapped*
