@@ -61,13 +61,13 @@ Plans:
   3. User can click a reset button (or double-click the chart) to return to the full-day view
   4. User can move the cursor over the chart and see a crosshair with a tooltip showing the values of all currently visible series at that time position
   5. User can see a minimap overview beneath the chart showing the full day with the current zoom range highlighted
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: Drag-range zoom and reset — uPlot select hook, zoom state in app store, reset button wiring
-- [ ] 03-02: Scroll-wheel zoom plugin — inline wheel-zoom plugin from uPlot demo, cursor-centered zoom, page-scroll conflict guard
-- [ ] 03-03: Cursor crosshair and tooltip — uPlot cursor plugin, tooltip showing visible series values at cursor position
-- [ ] 03-04: Minimap overview — secondary uPlot instance or canvas brush widget showing full day with zoom region highlighted
+- [ ] 03-01-PLAN.md — Layout foundation and drag-to-zoom: CSS layout (toolbar + minimap), cursor/select enabled in createChart(), drag-zoom, reset button, double-click reset
+- [ ] 03-02-PLAN.md — Scroll-wheel zoom plugin: cursor-centered wheel zoom, page-scroll guard, zoom limits (5 min to full day)
+- [ ] 03-03-PLAN.md — Cursor crosshair and tooltip: tooltipPlugin() with HH:MM header and all visible series values, left/right flip positioning
+- [ ] 03-04-PLAN.md — Minimap overview: secondary uPlot instance, zoom region highlight, drag-to-pan, resize sync, human verification checkpoint
 
 ### Phase 4: Parameter Management
 **Goal**: Users can switch between pre-built diagnostic views and customize exactly which parameters are visible, with their selections remembered across page reloads
