@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 2 of 4 (Chart Rendering) — IN PROGRESS
-Plan: 1 of 3 complete (02-01 complete, 02-02 and 02-03 pending)
-Status: 02-01 complete — uPlot chart instance with dual axes and binary band rendering
-Last activity: 2026-02-18 — 02-01 complete: uPlot chart renders after CSV load with 9 default series, BR binary band, floating legend, and DD.MM.YYYY date title
+Plan: 2 of 3 in progress (02-01 complete, 02-02 paused at human-verify checkpoint, 02-03 pending)
+Status: 02-02 Task 1 complete — resize handler and benchmarkSeriesToggle() added; awaiting human visual verification (Task 2 checkpoint)
+Last activity: 2026-02-18 — 02-02 Task 1: debounced window resize calls setSize(), benchmarkSeriesToggle() diagnostic exposed on window
 
-Progress: [████░░░░░░] 35%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -64,6 +64,8 @@ Recent decisions affecting current work:
 - [02-01]: cursor.show:false and select.show:false at construction — Phase 3 owns all interactive overlay behavior
 - [02-01]: AppState.onZoomChange and AppState.zoomRange stubs initialized as null — Phase 3 assigns these
 - [02-01]: X-axis formatted via getUTCHours/getUTCMinutes — timestamps are UTC, local timezone must not shift display
+- [02-02]: Resize debounced at 100ms — plan's 200ms redraw budget leaves margin for uPlot render after debounce fires
+- [02-02]: benchmarkSeriesToggle() runs 20 toggle iterations — stable average without prolonged visible flicker; restores series[1] to show:true at end
 
 ### Pending Todos
 
@@ -79,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 02-01-PLAN.md — uPlot chart instance implemented and committed
-Resume file: .planning/phases/02-chart-rendering/02-02-PLAN.md
+Stopped at: Paused at 02-02-PLAN.md Task 2 — human visual verification checkpoint (CHRT-01 through CHRT-04 all implemented, awaiting browser confirmation)
+Resume file: .planning/phases/02-chart-rendering/02-02-PLAN.md (continuation after human-verify checkpoint)
