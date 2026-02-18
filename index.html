@@ -918,6 +918,57 @@
       }
     }
 
+    // ─── Responsive resize (CHRT-03) ──────────────────────────────
+    let _resizeTimer = null;
+
+    function onWindowResize() {
+      if (!AppState.chart) return;
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(() => {
+        const container = document.getElementById('chart-area');
+        AppState.chart.setSize({
+          width:  container.clientWidth,
+          height: container.clientHeight,
+        });
+      }, 100);
+    }
+
+    window.addEventListener('resize', onWindowResize);
+
+    // ─── Performance diagnostic (CHRT-04) ─────────────────────────
+    // Usage: benchmarkSeriesToggle() in browser console after loading a CSV
+    // Expected: < 100ms per toggle
+    function benchmarkSeriesToggle() {
+      if (!AppState.chart) { console.warn('No chart — load a CSV first'); return; }
+      const chart = AppState.chart;
+      const N = 20;
+      const t0 = performance.now();
+      for (let i = 0; i < N; i++) {
+        const isShown = chart.series[1] ? chart.series[1].show !== false : true;
+        chart.setSeries(1, { show: !isShown });
+      }
+      const elapsed = performance.now() - t0;
+      const perToggle = (elapsed / N).toFixed(2);
+      console.log('Benchmark: ' + N + ' toggles in ' + elapsed.toFixed(1) + ' ms (' + perToggle + ' ms/toggle)');
+      console.log(parseFloat(perToggle) < 100 ? 'CHRT-04: PASS (< 100ms)' : 'CHRT-04: FAIL (> 100ms)');
+      chart.setSeries(1, { show: true }); // restore visibility
+    }
+    window.benchmarkSeriesToggle = benchmarkSeriesToggle;
+
+    // ─── Phase 3/4 Integration Points ─────────────────────────────
+    // Phase 3 (zoom/cursor/minimap) uses:
+    //   AppState.chart.setScale('x', { min, max })  — zoom to time range
+    //   AppState.chart.setCursor({ left, top })      — sync cursor with minimap
+    //   AppState.chart.setSize({ width, height })    — already wired in onWindowResize
+    //   AppState.onZoomChange(min, max)              — Phase 3 calls this after zoom
+    //   AppState.zoomRange = { min, max }            — Phase 3 writes current zoom state
+    //
+    // Phase 4 (parameter management) uses:
+    //   AppState.chart.setSeries(idx, { show })      — toggle series, no chart recreate
+    //   AppState.chart.setData(newData)              — replace data for new view
+    //   AppState.chartSeries                         — series opts array for reference
+    //   Recreate uPlot (new uPlot) only when series COUNT changes (different preset view)
+
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
     const pickBtn = document.getElementById('pick-file-btn');
     const fileInput = document.getElementById('file-input');
