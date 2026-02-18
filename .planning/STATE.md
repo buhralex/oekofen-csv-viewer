@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 2 - Chart Rendering
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation) — COMPLETE
-Plan: 3 of 3 in current phase (01-01, 01-02, and 01-03 all complete)
-Status: Phase 1 complete — ready for Phase 2
-Last activity: 2026-02-17 — 01-03 complete: full CSV parse/normalize pipeline verified against real OekoFEN file, all PARS requirements satisfied
+Phase: 2 of 4 (Chart Rendering) — IN PROGRESS
+Plan: 1 of 3 complete (02-01 complete, 02-02 and 02-03 pending)
+Status: 02-01 complete — uPlot chart instance with dual axes and binary band rendering
+Last activity: 2026-02-18 — 02-01 complete: uPlot chart renders after CSV load with 9 default series, BR binary band, floating legend, and DD.MM.YYYY date title
 
-Progress: [███░░░░░░░] 21%
+Progress: [████░░░░░░] 35%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~23 min
-- Total execution time: ~0.75 hours
+- Total plans completed: 4
+- Average duration: ~24 min
+- Total execution time: ~1 hour
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | ~80 min | ~27 min |
+| 2. Chart Rendering | 1/3 | ~25 min | ~25 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (15 min), 01-02 (~30 min), 01-03 (~35 min)
-- Trend: -
+- Last 5 plans: 01-01 (15 min), 01-02 (~30 min), 01-03 (~35 min), 02-01 (~25 min)
+- Trend: Steady
 
 *Updated after each plan completion*
 
@@ -58,6 +59,11 @@ Recent decisions affecting current work:
 - [01-03]: BINARY_COLUMNS Set(['BR','Sperrzeit']) — type:'discrete' signals Phase 2 to use step chart rendering
 - [01-03]: PE1 group unified as 'Pellet Unit (PE1)', not split — per CONTEXT.md locked decision
 - [01-03]: AppState.dataModel shape locked: { isOekoFEN, timestamps[], columns[], parseIssues, rowCount } — Phase 2 consumes this directly
+- [02-01]: uPlot.paths.stepped({ align: 1 }) used for BR binary series — step interpolation not linear, renders as filled 0/1 band
+- [02-01]: Dual-axis architecture set at construction time: left 'y' (auto-scale), right 'binary' (fixed 0-1) — cannot add axes after uPlot init
+- [02-01]: cursor.show:false and select.show:false at construction — Phase 3 owns all interactive overlay behavior
+- [02-01]: AppState.onZoomChange and AppState.zoomRange stubs initialized as null — Phase 3 assigns these
+- [02-01]: X-axis formatted via getUTCHours/getUTCMinutes — timestamps are UTC, local timezone must not shift display
 
 ### Pending Todos
 
@@ -68,9 +74,10 @@ None.
 - [Phase 1 RESOLVED]: CSV schema validated — ISO-8859-1, semicolon delimiter, trailing semicolons, trailing spaces in column names. Plans reflect actual file format.
 - [Phase 1 RESOLVED]: Column group rules hardcoded from real file inspection — HK1, WW1, PU1, PE1 prefix-based; Boiler explicit list.
 - [Advisory]: PARS-03 implemented via TextDecoder('windows-1252') not BOM stripping — real file has no BOM. Excel-generated UTF-8 BOM files not handled (future concern if needed).
+- [Advisory 02-01]: DEFAULT_SERIES rawNames are based on the known real OekoFEN CSV schema. If a file has different column names, buildChartData() will warn and skip unresolved series. Phase 4 will make series selection dynamic.
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 2 context gathered — ready for /gsd:plan-phase 2
-Resume file: .planning/phases/02-chart-rendering/02-CONTEXT.md
+Stopped at: Completed 02-01-PLAN.md — uPlot chart instance implemented and committed
+Resume file: .planning/phases/02-chart-rendering/02-02-PLAN.md
