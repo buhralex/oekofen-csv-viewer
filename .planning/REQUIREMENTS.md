@@ -25,8 +25,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **CHRT-01**: User can view selected parameters as interactive line charts against a time axis (HH:MM)
 - [x] **CHRT-02**: Binary/discrete columns (pump on/off, status codes) render as step charts, not interpolated lines
-- [ ] **CHRT-03**: Chart resizes responsively when the browser window is resized
-- [ ] **CHRT-04**: Chart renders smoothly with up to 70 columns x 1440 data points
+- [x] **CHRT-03**: Chart resizes responsively when the browser window is resized
+- [x] **CHRT-04**: Chart renders smoothly with up to 70 columns x 1440 data points
 
 ### Navigation
 
@@ -98,8 +98,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INTF-02 | Phase 1 | Complete (01-01) |
 | CHRT-01 | Phase 2 | Complete (02-01) |
 | CHRT-02 | Phase 2 | Complete (02-01) |
-| CHRT-03 | Phase 2 | Pending |
-| CHRT-04 | Phase 2 | Pending |
+| CHRT-03 | Phase 2 | Complete (02-02) |
+| CHRT-04 | Phase 2 | Complete (02-02) |
 | NAVG-01 | Phase 3 | Pending |
 | NAVG-02 | Phase 3 | Pending |
 | NAVG-03 | Phase 3 | Pending |
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-18 after 02-01 execution — CHRT-01 and CHRT-02 complete: uPlot chart with HH:MM time axis and BR binary step band rendered*
+*Last updated: 2026-02-18 after 02-02 execution — CHRT-03 and CHRT-04 complete: debounced resize handler, benchmarkSeriesToggle() diagnostic, human-verified all four CHRT requirements*
