@@ -45,12 +45,11 @@ Plans:
   2. Binary and discrete columns (pump on/off, status codes) render as step charts, visually distinct from interpolated temperature lines
   3. The chart resizes and redraws correctly when the browser window is resized
   4. The chart renders without perceptible lag with up to 70 columns and 1440 data points loaded
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: uPlot instance and lifecycle — columnar series builder, create/setData/setSeries pattern (no recreate on toggle), animations disabled
-- [ ] 02-02: Axis architecture — left axis for continuous values (temperatures, percentages), binary step series with correct rendering on dedicated axis
-- [ ] 02-03: Responsive resize and performance validation — window resize handler, benchmark 70-series toggle under 100 ms
+- [ ] 02-01-PLAN.md — Series builder + uPlot instance: buildChartData(), createChart(), destroyChart(), dual-axis architecture, binary band rendering for BR
+- [ ] 02-02-PLAN.md — Responsive resize, performance validation, and visual verification checkpoint
 
 ### Phase 3: Navigation and Interaction
 **Goal**: Users can precisely navigate the time axis to isolate heating events using drag-zoom, scroll-zoom, cursor inspection, and the full-day minimap
@@ -95,6 +94,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-02-17 |
-| 2. Chart Rendering | 0/3 | Not started | - |
+| 2. Chart Rendering | 0/2 | Not started | - |
 | 3. Navigation and Interaction | 0/4 | Not started | - |
 | 4. Parameter Management | 0/4 | Not started | - |
