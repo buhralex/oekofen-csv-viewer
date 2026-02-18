@@ -210,13 +210,53 @@
 
     #chart-area {
       position: fixed;
+      top: 90px;
       left: 0; right: 0; bottom: 28px;
       display: none;
       overflow: hidden;
+      background: var(--bg-primary);
     }
 
     #chart-area.visible {
       display: block;
+    }
+
+    /* ─── uPlot Dark Theme Overrides ─────────────────────────── */
+    .u-wrap {
+      background: var(--bg-primary) !important;
+    }
+
+    /* Floating legend: top-left overlay matching the OekoFEN PNG style */
+    .u-legend {
+      position: absolute !important;
+      top: 30px !important;
+      left: 10px !important;
+      background: rgba(22, 33, 62, 0.88) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      border-radius: 6px !important;
+      padding: 6px 10px !important;
+      font-size: 11px !important;
+      color: var(--text-primary) !important;
+      pointer-events: none !important;
+      z-index: 10 !important;
+    }
+
+    .u-legend .u-series td {
+      padding: 1px 4px !important;
+    }
+
+    .u-legend .u-marker {
+      width: 12px !important;
+      height: 3px !important;
+      margin-right: 4px !important;
+      border-radius: 1px !important;
+    }
+
+    /* Chart title */
+    .u-title {
+      color: var(--text-muted) !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
     }
 
     /* ─── Status Bar ─────────────────────────────────────────── */
@@ -325,10 +365,15 @@
 
     // ─── App State ────────────────────────────────────────────────
     const AppState = {
-      dataModel: null,   // { timestamps: Float64Array, columns: Column[] }
-      filename: null,
-      fileDate: null,
-      // Phase 2+ view state: visibleColumns, zoomRange
+      dataModel:     null,   // { isOekoFEN, timestamps[], columns[], parseIssues, rowCount }
+      filename:      null,
+      fileDate:      null,
+      // Phase 2 — chart state
+      chart:         null,   // uPlot instance — set by createChart(), cleared by destroyChart()
+      chartSeries:   null,   // series opts array — Phase 4 uses for setSeries(idx, {show})
+      // Phase 3 hook points (stubs — Phase 3 populates these):
+      onZoomChange:  null,   // function(minTs, maxTs) — minimap subscribes here
+      zoomRange:     null,   // { min, max } in Unix seconds — set by Phase 3 zoom plugin
     };
     window.AppState = AppState; // expose for debugging
 
@@ -653,6 +698,101 @@
       return { data, series, resolvedCols };
     }
 
+    // ─── Chart Lifecycle (Phase 2) ────────────────────────────────
+    function destroyChart() {
+      if (AppState.chart) {
+        AppState.chart.destroy();
+        AppState.chart = null;
+      }
+      document.getElementById('chart-area').innerHTML = '';
+    }
+
+    function createChart() {
+      destroyChart();
+
+      const dataModel = AppState.dataModel;
+      const { data, series } = buildChartData(dataModel, DEFAULT_SERIES);
+
+      // Format chart title as DD.MM.YYYY from AppState.fileDate (YYYYMMDD) or first timestamp
+      let chartTitle = '';
+      if (AppState.fileDate && AppState.fileDate.length === 8) {
+        const fd = AppState.fileDate;
+        chartTitle = fd.slice(6, 8) + '.' + fd.slice(4, 6) + '.' + fd.slice(0, 4);
+      } else if (dataModel.timestamps.length > 0) {
+        const d = new Date(dataModel.timestamps[0] * 1000);
+        chartTitle = String(d.getUTCDate()).padStart(2, '0') + '.' +
+                     String(d.getUTCMonth() + 1).padStart(2, '0') + '.' +
+                     d.getUTCFullYear();
+      }
+
+      const container = document.getElementById('chart-area');
+      const opts = {
+        title:  chartTitle,
+        width:  container.clientWidth,
+        height: container.clientHeight,
+        series,
+
+        axes: [
+          // X-axis: Unix seconds formatted as HH:MM in UTC
+          {
+            stroke: '#a0a0b8',
+            grid:   { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            ticks:  { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            values: (self, ticks) => ticks.map(t => {
+              const d = new Date(t * 1000);
+              return String(d.getUTCHours()).padStart(2, '0') + ':' +
+                     String(d.getUTCMinutes()).padStart(2, '0');
+            }),
+          },
+          // Left Y-axis: continuous series (temperatures, percentages) — auto-scale
+          {
+            scale:  'y',
+            side:   3,
+            stroke: '#a0a0b8',
+            grid:   { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            ticks:  { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            values: (self, ticks) => ticks.map(v => v.toFixed(0)),
+            size:   45,
+          },
+          // Right Y-axis: binary/discrete series — fixed 0-1 range
+          {
+            scale:  'binary',
+            side:   1,
+            stroke: '#a0a0b8',
+            grid:   { show: false },
+            ticks:  { show: false },
+            values: (self, ticks) => ticks.map(v => (v === 1 ? 'On' : v === 0 ? 'Off' : '')),
+            size:   35,
+          },
+        ],
+
+        scales: {
+          x:      {},
+          y:      { auto: true },    // auto-scales to visible continuous series
+          binary: { range: [0, 1] }, // fixed for discrete 0/1 states
+        },
+
+        legend: {
+          show: true,
+          live: false,  // Phase 3 will handle live cursor value display
+        },
+
+        cursor: {
+          show: false,  // Phase 3 adds crosshair and tooltip
+        },
+
+        select: { show: false },  // Phase 3 adds drag-to-zoom selection
+
+        // Reserve minimap space: chart height fills container (Phase 3 will add minimap below)
+        padding: [10, 0, 0, 0],
+      };
+
+      AppState.chart = new uPlot(opts, data, container);
+      AppState.chartSeries = series;
+
+      setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
+    }
+
     // STEP 7 — Build the columnar data model
     function buildDataModel(fields, rows) {
       const datumField = fields.find(f => f === 'Datum');
@@ -733,56 +873,43 @@
       `;
     }
 
-    // STEP 8 — Full pipeline entry point (replaces Plan 02 stub)
+    // STEP 8 — Full pipeline entry point (Phase 2: adds createChart())
     async function onFileAccepted(file) {
-      // Transition UI
-      document.getElementById('drop-zone').style.display = 'none';
-      document.getElementById('app-header').classList.add('visible');
-      document.getElementById('header-filename').innerHTML =
-        'File: <strong>' + file.name + '</strong>';
       setStatus('Loading\u2026');
 
       try {
-        // 1. Read as Windows-1252 (ISO-8859-1)
         const csvString = await readFileAsText(file);
-
-        // 2. Parse with PapaParse (semicolon delimiter)
         const papaResult = parseCSVString(csvString);
-
-        // 3. Normalize: trim headers, drop empty trailing column
         const { fields, rows } = normalizeHeaders(papaResult);
-
-        // 4 + 5 + 6 + 7. Build data model (converts decimals, timestamps, classifies columns)
         const dataModel = buildDataModel(fields, rows);
 
-        // Warn if not OekoFEN data (missing Datum/Zeit), but abort parse
         if (!dataModel.isOekoFEN) {
-          showToast("This doesn't look like OekoFEN data \u2014 missing Datum/Zeit columns. Parsing aborted.", 'warning');
+          showToast("This doesn't look like OekoFEN data \u2014 missing Datum/Zeit columns.", 'warning');
           setStatus('Parse failed: no Datum/Zeit columns.');
           return;
         }
 
-        // Detect non-OekoFEN CSV (has Datum/Zeit but no AT column) — warn but proceed
         const hasAT = dataModel.columns.some(c => c.rawName === 'AT [\u00b0C]' || c.rawName.trim() === 'AT');
         if (!hasAT) {
-          showToast("This doesn't look like OekoFEN data, but proceeding with parsing.", 'warning');
+          showToast("This doesn't look like OekoFEN data, but proceeding.", 'warning');
         }
 
-        // Store in AppState
         AppState.dataModel = dataModel;
         AppState.filename = file.name;
-        // Extract date from filename if possible (touch_YYYYMMDD.csv)
         const dateMatch = file.name.match(/(\d{8})/);
         AppState.fileDate = dateMatch ? dateMatch[1] : null;
 
-        // Show data summary
+        // Show app view and data summary
+        showAppView(file.name);
         showDataSummary(dataModel, file.name);
 
-        // Update status bar
+        // Render chart (Phase 2)
+        createChart();
+
         const issueText = dataModel.parseIssues > 0
-          ? ` \u2014 ${dataModel.parseIssues} rows had parse issues`
+          ? ' \u2014 ' + dataModel.parseIssues + ' rows had parse issues'
           : '';
-        setStatus(`Loaded ${dataModel.rowCount} rows, ${dataModel.columns.length} columns${issueText}`);
+        setStatus('Loaded ' + dataModel.rowCount + ' rows, ' + dataModel.columns.length + ' columns' + issueText);
 
       } catch (err) {
         console.error('[onFileAccepted] Error:', err);
@@ -805,10 +932,13 @@
 
     // ─── Load Another button ──────────────────────────────────────
     document.getElementById('load-another-btn').addEventListener('click', () => {
+      destroyChart();
       showDropZone();
       AppState.dataModel = null;
       AppState.filename = null;
       AppState.fileDate = null;
+      AppState.chartSeries = null;
+      setStatus('Ready \u2014 drop an OekoFEN CSV file to begin');
     });
 
     // ─── Init ─────────────────────────────────────────────────────
