@@ -565,6 +565,94 @@
       return { group, type };
     }
 
+    // ─── Chart Series Builder (Phase 2) ───────────────────────────
+
+    const DEFAULT_SERIES = [
+      'AT [\u00b0C]',           // Outside air temperature (Aussentemperatur)
+      'KT Ist[\u00b0C]',        // Boiler actual temperature (Kesseltemperatur)
+      'HK1 VL Ist[\u00b0C]',    // HK1 flow temperature actual
+      'HK1 RL Ist[\u00b0C]',    // HK1 return temperature actual
+      'PU1 oben[\u00b0C]',      // Buffer upper temperature
+      'PU1 unten[\u00b0C]',     // Buffer lower temperature
+      'PE1 Kessel[\u00b0C]',    // PE1 boiler temperature
+      'PE1 HK [\u00b0C]',       // PE1 heating circuit temp or power
+      'BR',                      // Burner running (binary 0/1)
+    ];
+
+    const GROUP_COLORS = {
+      'Boiler':                { continuous: '#4fc3f7', binary: 'rgba(79,195,247,0.45)' },
+      'Heating Circuit (HK1)': { continuous: '#ff8a65' },
+      'Hot Water (WW1)':       { continuous: '#ce93d8' },
+      'Buffer (PU1)':          { continuous: '#81c784' },
+      'Pellet Unit (PE1)':     { continuous: '#ffca28' },
+    };
+
+    const SERIES_COLOR_OVERRIDES = {
+      'AT [\u00b0C]':        '#80deea',  // teal — stands out as "outside air"
+      'KT Ist[\u00b0C]':     '#ef5350',  // red — boiler temp is most critical
+      'HK1 RL Ist[\u00b0C]': '#ff7043',  // darker orange to separate from VL
+      'PU1 unten[\u00b0C]':  '#4caf50',  // darker green to separate from oben
+    };
+
+    function buildChartData(dataModel, seriesNames) {
+      // uPlot data format: [ timestamps[], col1[], col2[], ... ]
+      // First element is always the shared X-axis timestamps array.
+      const timestamps = dataModel.timestamps;
+
+      // Resolve columns by rawName — skip any that don't exist in the data model
+      const resolvedCols = [];
+      for (const rawName of seriesNames) {
+        const col = dataModel.columns.find(c => c.rawName === rawName);
+        if (col) resolvedCols.push(col);
+        else console.warn('[buildChartData] rawName not found in dataModel:', rawName);
+      }
+
+      // Build columnar data arrays
+      const data = [timestamps];
+      for (const col of resolvedCols) {
+        // uPlot treats NaN as a gap — convert null to NaN
+        const arr = col.data.map(v => (v === null ? NaN : v));
+        data.push(arr);
+      }
+
+      // Build series opts — first entry is X-axis placeholder (empty object)
+      const series = [{}];
+      for (const col of resolvedCols) {
+        const isBinary = col.type === 'discrete';
+        const groupColors = GROUP_COLORS[col.group] || { continuous: '#e0e0e0' };
+        const stroke = SERIES_COLOR_OVERRIDES[col.rawName] ||
+                       (isBinary ? (groupColors.binary || 'rgba(79,195,247,0.45)') : groupColors.continuous) ||
+                       '#e0e0e0';
+
+        if (isBinary) {
+          // Binary series: filled band on the right 'binary' axis (fixed 0-1 scale)
+          // fill: stroke uses the rgba transparency to allow temperature lines to show through
+          // paths.stepped renders as a step function (0 or 1, no interpolation)
+          series.push({
+            label:    col.displayName,
+            scale:    'binary',
+            stroke:   stroke,
+            fill:     stroke,
+            width:    0,          // no line stroke — fill only
+            spanGaps: false,
+            paths:    uPlot.paths.stepped({ align: 1 }),
+            points:   { show: false },
+          });
+        } else {
+          series.push({
+            label:    col.displayName,
+            scale:    'y',
+            stroke:   stroke,
+            width:    1.5,
+            spanGaps: false,
+            points:   { show: false },
+          });
+        }
+      }
+
+      return { data, series, resolvedCols };
+    }
+
     // STEP 7 — Build the columnar data model
     function buildDataModel(fields, rows) {
       const datumField = fields.find(f => f === 'Datum');
