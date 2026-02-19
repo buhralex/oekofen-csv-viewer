@@ -890,7 +890,9 @@
           tooltip.style.display = 'none';
         });
         u.over.addEventListener('mouseenter', function() {
-          if (tooltip.innerHTML) tooltip.style.display = '';
+          // Use 'block' not '' — the CSS rule sets display:none so clearing inline style
+          // would re-apply the CSS rule, keeping the tooltip hidden.
+          if (tooltip.innerHTML) tooltip.style.display = 'block';
         });
       }
 
@@ -928,7 +930,9 @@
         }
 
         tooltip.innerHTML = html;
-        tooltip.style.display = '';
+        // Use 'block' not '' — CSS rule sets display:none; clearing inline style
+        // would re-apply the CSS rule and keep tooltip hidden.
+        tooltip.style.display = 'block';
 
         // Left/right flip: if tooltip would overflow right edge, show it to the left of cursor
         const chartW = u.over.clientWidth;
