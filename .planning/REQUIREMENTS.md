@@ -40,7 +40,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **PARM-01**: User can select a pre-built view to show parameters grouped by system (Boiler, Heating Circuit, Hot Water, Buffer, Pellet Unit)
 - [x] **PARM-02**: User can show/hide individual parameters on the chart via legend clicks
-- [ ] **PARM-03**: User can select custom parameters beyond the pre-built views
+- [x] **PARM-03**: User can select custom parameters beyond the pre-built views
 - [ ] **PARM-04**: User's visible series and active view are persisted in localStorage across page reloads
 
 ### Interface
@@ -107,7 +107,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAVG-05 | Phase 3 | Complete |
 | PARM-01 | Phase 4 | Complete |
 | PARM-02 | Phase 4 | Complete |
-| PARM-03 | Phase 4 | Pending |
+| PARM-03 | Phase 4 | Complete |
 | PARM-04 | Phase 4 | Pending |
 
 **Coverage:**
