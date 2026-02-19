@@ -1105,9 +1105,6 @@
       const dataModel = AppState.dataModel;
       const { data, series } = buildChartData(dataModel, DEFAULT_SERIES);
 
-      // Guard flag: prevents the zoom-floor correction from recursing into itself.
-      let _clampingZoom = false;
-
       // Format chart title as DD.MM.YYYY from AppState.fileDate (YYYYMMDD) or first timestamp
       let chartTitle = '';
       if (AppState.fileDate && AppState.fileDate.length === 8) {
@@ -1181,10 +1178,14 @@
           x: true,
           y: false,
           drag: {
-            setScale: true,   // native drag-to-zoom — calls setScale('x') on mouseup
+            // setScale:false — uPlot's native drag zoom bypasses any setScale hook correction
+            // (uPlot clears Kl[] at the end of its own qn() render cycle, discarding any
+            // in-hook setScale calls). We handle the zoom manually via a mouseup listener
+            // so we can pass pre-clamped values directly to setScale().
+            setScale: false,
             x: true,
             y: false,
-            dist: 3,          // minimum drag distance in px before zoom activates (prevents mis-clicks)
+            dist: 3,          // minimum drag distance in px before zoom activates
           },
         },
 
@@ -1193,27 +1194,8 @@
         hooks: {
           setScale: [(u, scaleKey) => {
             if (scaleKey !== 'x') return;
-
-            const MIN_RANGE = 300; // 5-minute floor — enforced for ALL zoom sources
             const min = u.scales.x.min;
             const max = u.scales.x.max;
-
-            // If the resulting range is below the floor, correct it immediately.
-            // _clampingZoom prevents this correction from recursing into itself.
-            if (!_clampingZoom && (max - min) < MIN_RANGE) {
-              const mid    = (min + max) / 2;
-              const dMin   = u.data[0][0];
-              const dMax   = u.data[0][u.data[0].length - 1];
-              let newMin   = mid - MIN_RANGE / 2;
-              let newMax   = mid + MIN_RANGE / 2;
-              if (newMin < dMin) { newMin = dMin; newMax = dMin + MIN_RANGE; }
-              if (newMax > dMax) { newMax = dMax; newMin = dMax - MIN_RANGE; }
-              _clampingZoom = true;
-              u.setScale('x', { min: newMin, max: newMax });
-              _clampingZoom = false;
-              return; // the recursive call above will handle state updates
-            }
-
             AppState.zoomRange = { min, max };
             if (AppState.onZoomChange) AppState.onZoomChange(min, max);
             updateResetButtonVisibility(u);
@@ -1231,6 +1213,28 @@
 
       AppState.chart = new uPlot(opts, data, container);
       AppState.chartSeries = series;
+
+      // Manual drag-zoom with 5-minute floor. cursor.drag.setScale:false disables uPlot's
+      // native zoom-on-drag so we control setScale() directly with pre-clamped values.
+      AppState.chart.over.addEventListener('mouseup', () => {
+        const u = AppState.chart;
+        if (!u) return;
+        const { left, width } = u.select;
+        if (width <= 0) return;
+        const MIN_RANGE = 300; // 5 minutes in seconds
+        const dataMin = u.data[0][0];
+        const dataMax = u.data[0][u.data[0].length - 1];
+        let newMin = u.posToVal(left, 'x');
+        let newMax = u.posToVal(left + width, 'x');
+        if (newMax - newMin < MIN_RANGE) {
+          const mid = (newMin + newMax) / 2;
+          newMin = mid - MIN_RANGE / 2;
+          newMax = mid + MIN_RANGE / 2;
+          if (newMin < dataMin) { newMin = dataMin; newMax = dataMin + MIN_RANGE; }
+          if (newMax > dataMax) { newMax = dataMax; newMin = dataMax - MIN_RANGE; }
+        }
+        u.setScale('x', { min: newMin, max: newMax });
+      });
 
       // Wire reset button — use explicit data extents rather than null/null
       // because null/null may not reliably trigger the setScale hook in all uPlot builds.
