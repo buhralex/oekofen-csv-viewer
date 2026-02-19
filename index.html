@@ -1437,7 +1437,8 @@
     }
 
     function destroyChart() {
-      destroyViewTabs();   // Phase 4 cleanup — MUST come before chart destroy
+      destroyViewTabs();        // Phase 4.1 cleanup — MUST come before chart destroy
+      unwireLegendClicks();     // Phase 4.2 cleanup — must be before chart.destroy()
       if (AppState.chart) {
         AppState.chart.destroy();
         AppState.chart = null;
@@ -1633,6 +1634,9 @@
       _activeView = 'All';
       buildViewTabs(_viewPresets);
       updateTabHighlight('All');
+
+      // Phase 4.2: Wire legend click toggle
+      wireLegendClicks(AppState.chart);
 
       setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
     }
@@ -2034,6 +2038,71 @@
       if (el) el.remove();
       const paramsBtn = document.getElementById('params-btn');
       if (paramsBtn) paramsBtn.style.display = 'none';
+    }
+
+    // ─── Phase 4.2: Legend click toggle ───────────────────────────
+
+    // Wire event delegation on the .u-legend table for series show/hide.
+    // CRITICAL: .u-legend must have pointer-events: auto (fixed in 04-01 Task 1).
+    // CRITICAL INDEX OFFSET: with legend.live:false, series[0] (x-axis) has NO legend row.
+    //   tbody row 0 → u.series[1], row 1 → u.series[2], etc. Always add 1 to rowIndex.
+    function wireLegendClicks(u) {
+      const legend = u.root ? u.root.querySelector('.u-legend') : null;
+      if (!legend) return;
+
+      // Apply cursor:pointer to all existing series rows
+      const tbody = legend.querySelector('tbody');
+      if (tbody) {
+        Array.from(tbody.childNodes)
+          .filter(n => n.nodeType === 1)
+          .forEach(row => { row.style.cursor = 'pointer'; });
+      }
+
+      function onLegendClick(e) {
+        const u = AppState.chart;
+        if (!u) return;
+
+        // Walk up from clicked element to the .u-series <tr> row
+        const row = e.target.closest('.u-series');
+        if (!row) return;
+
+        const tbody = legend.querySelector('tbody');
+        if (!tbody) return;
+        const rows = Array.from(tbody.childNodes).filter(n => n.nodeType === 1);
+        const rowIndex = rows.indexOf(row);
+        if (rowIndex < 0) return;
+
+        // +1 offset: series[0] is x-axis with no legend row when legend.live:false
+        const seriesIdx = rowIndex + 1;
+        if (seriesIdx >= u.series.length) return;  // safety guard
+
+        const currentShow = u.series[seriesIdx].show !== false;
+        const newShow = !currentShow;
+
+        u.setSeries(seriesIdx, { show: newShow });
+
+        // Apply inline style for visual feedback (overrides uPlot's .u-off opacity:0.3)
+        applyLegendRowStyle(row, !newShow);
+
+        // Update tab indicator and persist (Phase 4 shared state machine from 04-01)
+        updateViewState();
+      }
+
+      legend.addEventListener('click', onLegendClick);
+      // Store handler reference on the legend element for cleanup in unwireLegendClicks()
+      legend._phase4ClickHandler = onLegendClick;
+    }
+
+    // Remove the legend click handler added by wireLegendClicks().
+    // Called inside destroyChart() to prevent listener accumulation across file reloads.
+    function unwireLegendClicks() {
+      const u = AppState.chart;
+      if (!u) return;
+      const legend = u.root ? u.root.querySelector('.u-legend') : null;
+      if (legend && legend._phase4ClickHandler) {
+        legend.removeEventListener('click', legend._phase4ClickHandler);
+        legend._phase4ClickHandler = null;
+      }
     }
 
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
