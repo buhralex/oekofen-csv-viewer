@@ -31,7 +31,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Navigation
 
 - [x] **NAVG-01**: User can zoom into a time range by click-dragging on the chart
-- [ ] **NAVG-02**: User can zoom in/out with the scroll wheel, centered on cursor position
+- [x] **NAVG-02**: User can zoom in/out with the scroll wheel, centered on cursor position
 - [x] **NAVG-03**: User can reset zoom to the full day view
 - [ ] **NAVG-04**: User can see a cursor crosshair with tooltip showing values of all visible series at the cursor time position
 - [ ] **NAVG-05**: User can see an overview/minimap showing the full day with the current zoom range highlighted
@@ -101,7 +101,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHRT-03 | Phase 2 | Complete (02-02) |
 | CHRT-04 | Phase 2 | Complete (02-02) |
 | NAVG-01 | Phase 3 | Complete (03-01) |
-| NAVG-02 | Phase 3 | Pending |
+| NAVG-02 | Phase 3 | Complete |
 | NAVG-03 | Phase 3 | Complete (03-01) |
 | NAVG-04 | Phase 3 | Pending |
 | NAVG-05 | Phase 3 | Pending |
