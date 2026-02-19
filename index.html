@@ -763,13 +763,27 @@
       return { data, series, resolvedCols };
     }
 
-    // ─── Chart Lifecycle (Phase 2) ────────────────────────────────
+    // ─── Chart Lifecycle (Phase 3) ────────────────────────────────
+    function updateResetButtonVisibility(u) {
+      const btn = document.getElementById('reset-zoom-btn');
+      if (!btn || !u) return;
+      const dataMin = u.data[0][0];
+      const dataMax = u.data[0][u.data[0].length - 1];
+      const min = u.scales.x.min;
+      const max = u.scales.x.max;
+      // 1-second tolerance to avoid float rounding causing button to show at full range
+      const isFullRange = (min <= dataMin + 1) && (max >= dataMax - 1);
+      btn.style.display = isFullRange ? 'none' : '';
+    }
+
     function destroyChart() {
       if (AppState.chart) {
         AppState.chart.destroy();
         AppState.chart = null;
       }
       document.getElementById('chart-area').innerHTML = '';
+      AppState.zoomRange = null;
+      AppState.onZoomChange = null;
     }
 
     function createChart() {
@@ -843,10 +857,30 @@
         },
 
         cursor: {
-          show: false,  // Phase 3 adds crosshair and tooltip
+          show: true,
+          x: true,
+          y: false,
+          drag: {
+            setScale: true,   // native drag-to-zoom — calls setScale('x') on mouseup
+            x: true,
+            y: false,
+            dist: 3,          // minimum drag distance in px before zoom activates (prevents mis-clicks)
+          },
         },
 
-        select: { show: false },  // Phase 3 adds drag-to-zoom selection
+        select: { show: true },   // shows selection rectangle during drag
+
+        hooks: {
+          setScale: [(u, scaleKey) => {
+            if (scaleKey === 'x') {
+              const min = u.scales.x.min;
+              const max = u.scales.x.max;
+              AppState.zoomRange = { min, max };
+              if (AppState.onZoomChange) AppState.onZoomChange(min, max);
+              updateResetButtonVisibility(u);
+            }
+          }],
+        },
 
         // Reserve minimap space: chart height fills container (Phase 3 will add minimap below)
         padding: [10, 0, 0, 0],
@@ -854,6 +888,20 @@
 
       AppState.chart = new uPlot(opts, data, container);
       AppState.chartSeries = series;
+
+      // Wire reset button
+      document.getElementById('reset-zoom-btn').addEventListener('click', () => {
+        if (AppState.chart) AppState.chart.setScale('x', { min: null, max: null });
+      });
+
+      // Wire double-click reset (uPlot v1.6.x has native dblclick reset on .over —
+      // this listener is an explicit backup and ensures consistent behavior)
+      AppState.chart.over.addEventListener('dblclick', () => {
+        AppState.chart.setScale('x', { min: null, max: null });
+      });
+
+      // Initialize reset button visibility (hidden at full range on load)
+      updateResetButtonVisibility(AppState.chart);
 
       setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
     }
