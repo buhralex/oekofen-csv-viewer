@@ -400,11 +400,19 @@
   <!-- Data summary: shown after load -->
   <div id="data-summary"></div>
 
+  <!-- Toolbar row: reset button (Phase 3); Phase 4 adds view tabs here -->
+  <div id="toolbar-row">
+    <button id="reset-zoom-btn" style="display:none">Reset Zoom</button>
+  </div>
+
   <!-- Toast notification container -->
   <div id="toast-container"></div>
 
   <!-- Chart area: Phase 2+ -->
   <div id="chart-area"></div>
+
+  <!-- Minimap overview: Phase 3 populates this with a secondary uPlot instance -->
+  <div id="minimap-area"></div>
 
   <!-- Status bar -->
   <div id="status-bar">
@@ -468,14 +476,18 @@
       document.getElementById('drop-zone').style.display = 'flex';
       document.getElementById('app-header').classList.remove('visible');
       document.getElementById('data-summary').classList.remove('visible');
+      document.getElementById('toolbar-row').classList.remove('visible');
       document.getElementById('chart-area').classList.remove('visible');
+      document.getElementById('minimap-area').classList.remove('visible');
     }
 
     function showAppView(filename) {
       document.getElementById('drop-zone').style.display = 'none';
       document.getElementById('app-header').classList.add('visible');
       document.getElementById('data-summary').classList.add('visible');
+      document.getElementById('toolbar-row').classList.add('visible');
       document.getElementById('chart-area').classList.add('visible');
+      document.getElementById('minimap-area').classList.add('visible');
       document.getElementById('header-filename').innerHTML =
         'File: <strong>' + filename + '</strong>';
     }
