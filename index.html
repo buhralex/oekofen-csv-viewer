@@ -1439,6 +1439,7 @@
     function destroyChart() {
       destroyViewTabs();        // Phase 4.1 cleanup — MUST come before chart destroy
       unwireLegendClicks();     // Phase 4.2 cleanup — must be before chart.destroy()
+      closePickerModal();       // Phase 4.3 — removes stale modal on file reload
       if (AppState.chart) {
         AppState.chart.destroy();
         AppState.chart = null;
@@ -2026,9 +2027,17 @@
         setActiveView(viewName);
       });
 
-      // Show the Parameters button (wired in 04-03; DOM exists from Task 2 HTML)
+      // Show the Parameters button and wire click handler (04-03)
       const paramsBtn = document.getElementById('params-btn');
-      if (paramsBtn) paramsBtn.style.display = '';
+      if (paramsBtn) {
+        paramsBtn.style.display = '';
+        // Remove any previous handler to prevent accumulation across file reloads
+        if (paramsBtn._paramsHandler) {
+          paramsBtn.removeEventListener('click', paramsBtn._paramsHandler);
+        }
+        paramsBtn._paramsHandler = openPickerModal;
+        paramsBtn.addEventListener('click', openPickerModal);
+      }
     }
 
     // Remove the #view-tabs DOM element and hide the Parameters button.
@@ -2103,6 +2112,204 @@
         legend.removeEventListener('click', legend._phase4ClickHandler);
         legend._phase4ClickHandler = null;
       }
+    }
+
+    // ─── Phase 4.3: Custom parameter picker modal ─────────────────
+
+    // Close and remove the picker modal from DOM.
+    // Safe to call even if modal is not open.
+    function closePickerModal() {
+      const modal = document.getElementById('picker-modal');
+      if (modal) modal.remove();
+    }
+
+    // Open the parameter picker modal.
+    // Reads current u.series[i].show state at open time — chart is the source of truth.
+    // No minimum selection enforced (user can uncheck everything and click Apply).
+    function openPickerModal() {
+      // Prevent double-open
+      if (document.getElementById('picker-modal')) return;
+
+      const u = AppState.chart;
+      const dataModel = AppState.dataModel;
+      if (!u || !dataModel) return;
+
+      // Build a set of currently visible rawNames (source of truth: live chart state)
+      const currentlyVisible = new Set(getVisibleRawNames());
+
+      // Group order matches VIEW_GROUPS: Boiler, Heating Circuit, Hot Water, Buffer, Pellet Unit
+      // Use values from VIEW_GROUPS (excluding 'All' which maps to null) to determine display order
+      const groupOrder = Object.values(VIEW_GROUPS).filter(g => g !== null);
+
+      // Build a map of group → column list from dataModel
+      const groupMap = new Map();
+      for (const groupName of groupOrder) {
+        const cols = dataModel.columns.filter(c => c.group === groupName);
+        if (cols.length > 0) groupMap.set(groupName, cols);
+      }
+
+      // ── Backdrop (full-screen overlay) ──────────────────────────
+      const backdrop = document.createElement('div');
+      backdrop.id = 'picker-modal';
+      backdrop.style.cssText = [
+        'position:fixed; inset:0; z-index:200;',
+        'background:rgba(0,0,0,0.5);',
+        'display:flex; align-items:center; justify-content:center;',
+        'animation: backdrop-in 150ms ease-out both;',
+      ].join('');
+
+      // Close on backdrop click (but not on dialog click)
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closePickerModal();
+      });
+
+      // ── Dialog ───────────────────────────────────────────────────
+      const dialog = document.createElement('div');
+      dialog.className = 'picker-dialog';
+
+      // Header
+      const header = document.createElement('div');
+      header.className = 'picker-header';
+      header.textContent = 'Add Parameters';
+      dialog.appendChild(header);
+
+      // Body — scrollable group sections
+      const body = document.createElement('div');
+      body.className = 'picker-body';
+
+      for (const [groupName, cols] of groupMap.entries()) {
+        // Group section container (collapsible)
+        const section = document.createElement('div');
+        section.className = 'picker-group-section';
+
+        // Group header (clickable to collapse/expand)
+        const groupHeader = document.createElement('div');
+        groupHeader.className = 'picker-group-header';
+
+        const chevron = document.createElement('span');
+        chevron.className = 'picker-group-chevron';
+        chevron.textContent = '\u25be';
+
+        const groupLabel = document.createElement('span');
+        groupLabel.textContent = groupName;
+
+        groupHeader.appendChild(chevron);
+        groupHeader.appendChild(groupLabel);
+
+        // Rows container (shown/hidden on collapse)
+        const rowsContainer = document.createElement('div');
+        rowsContainer.className = 'picker-group-rows';
+
+        // Toggle collapse on header click
+        groupHeader.addEventListener('click', () => {
+          section.classList.toggle('picker-group-collapsed');
+        });
+
+        // Build one row per column
+        for (const col of cols) {
+          const row = document.createElement('div');
+          row.className = 'picker-row';
+
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.id = 'picker-cb-' + col.rawName.replace(/[^a-zA-Z0-9]/g, '_');
+          cb.dataset.rawName = col.rawName;
+          cb.checked = currentlyVisible.has(col.rawName);
+
+          const label = document.createElement('label');
+          label.htmlFor = cb.id;
+          label.textContent = col.rawName;
+
+          row.appendChild(cb);
+          row.appendChild(label);
+
+          // Binary badge for discrete columns
+          if (col.type === 'discrete') {
+            const badge = document.createElement('span');
+            badge.className = 'picker-badge-binary';
+            badge.textContent = 'binary';
+            row.appendChild(badge);
+          }
+
+          // Clicking the row (not just the checkbox) toggles the checkbox
+          row.addEventListener('click', (e) => {
+            if (e.target !== cb) cb.checked = !cb.checked;
+          });
+
+          rowsContainer.appendChild(row);
+        }
+
+        section.appendChild(groupHeader);
+        section.appendChild(rowsContainer);
+        body.appendChild(section);
+      }
+      dialog.appendChild(body);
+
+      // Footer — Cancel and Apply buttons
+      const footer = document.createElement('div');
+      footer.className = 'picker-footer';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'picker-btn-cancel';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', closePickerModal);
+
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'picker-btn-apply';
+      applyBtn.textContent = 'Apply';
+      applyBtn.addEventListener('click', () => {
+        // Read all checkboxes from the modal
+        const checkboxes = backdrop.querySelectorAll('input[type="checkbox"]');
+        const u = AppState.chart;
+        if (!u) { closePickerModal(); return; }
+
+        // Apply each changed series using setSeries()
+        checkboxes.forEach(cb => {
+          const rawName = cb.dataset.rawName;
+          // Find series index: AppState.chartSeries[i].label === rawName for i >= 1
+          const seriesIdx = AppState.chartSeries
+            ? AppState.chartSeries.findIndex((s, i) => i > 0 && s.label === rawName)
+            : -1;
+          if (seriesIdx < 1) return;  // not in chart — skip
+
+          const currentShow = u.series[seriesIdx].show !== false;
+          const wantShow = cb.checked;
+          if (currentShow !== wantShow) {
+            u.setSeries(seriesIdx, { show: wantShow });
+
+            // Sync legend row inline style
+            const legend = u.root ? u.root.querySelector('.u-legend') : null;
+            if (legend) {
+              const tbody = legend.querySelector('tbody');
+              if (tbody) {
+                const rows = Array.from(tbody.childNodes).filter(n => n.nodeType === 1);
+                const row = rows[seriesIdx - 1];  // -1 because legend rows start at series[1]
+                if (row) applyLegendRowStyle(row, !wantShow);
+              }
+            }
+          }
+        });
+
+        // Update tab indicator and persist
+        updateViewState();
+        closePickerModal();
+      });
+
+      footer.appendChild(cancelBtn);
+      footer.appendChild(applyBtn);
+      dialog.appendChild(footer);
+
+      backdrop.appendChild(dialog);
+      document.body.appendChild(backdrop);
+
+      // Escape key closes the modal
+      function onEscape(e) {
+        if (e.key === 'Escape') {
+          closePickerModal();
+          document.removeEventListener('keydown', onEscape);
+        }
+      }
+      document.addEventListener('keydown', onEscape);
     }
 
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
