@@ -763,6 +763,59 @@
       return { data, series, resolvedCols };
     }
 
+    // ─── Wheel Zoom Plugin (NAVG-02) ──────────────────────────────
+    // Source pattern: uPlot official zoom-wheel.html demo
+    // Cursor-centered: the timestamp under the cursor stays fixed as range contracts/expands
+    function wheelZoomPlugin(opts) {
+      opts = opts || {};
+      const factor = opts.factor || 0.75;   // zoom-in shrinks range by this factor per scroll tick
+
+      return {
+        hooks: {
+          ready: [function(u) {
+            // Capture full data range once for clamping
+            const xMin = u.data[0][0];
+            const xMax = u.data[0][u.data[0].length - 1];
+            const MIN_RANGE = 300;                // 5 minutes in seconds (min zoom level)
+            const MAX_RANGE = xMax - xMin;        // full day range (max zoom level)
+
+            u.over.addEventListener('wheel', function(e) {
+              e.preventDefault();   // prevent page scroll — REQUIRES passive:false (see registration below)
+
+              // u.cursor.left is the pixel position within u.over (already chart-relative, no rect needed)
+              const cursorLeft = u.cursor.left;
+              if (cursorLeft < 0) return;   // cursor outside chart area
+
+              const xVal    = u.posToVal(cursorLeft, 'x');   // data value under cursor
+              const oxRange = u.scales.x.max - u.scales.x.min;
+              const leftPct = cursorLeft / u.over.clientWidth;  // fraction from left edge
+
+              // deltaY < 0 = scroll up = zoom in (shrink range); deltaY > 0 = zoom out (expand range)
+              let nxRange = e.deltaY < 0 ? oxRange * factor : oxRange / factor;
+
+              // Clamp to zoom limits
+              nxRange = Math.max(MIN_RANGE, Math.min(MAX_RANGE, nxRange));
+
+              // Cursor-centered: xVal stays at leftPct fraction of new range
+              let nxMin = xVal - leftPct * nxRange;
+              let nxMax = nxMin + nxRange;
+
+              // Clamp to data bounds — shift range rather than truncating it
+              if (nxMin < xMin) { nxMin = xMin; nxMax = nxMin + nxRange; }
+              if (nxMax > xMax) { nxMax = xMax; nxMin = nxMax - nxRange; }
+              // Final clamp to prevent overshoot when both bounds are hit
+              nxMin = Math.max(nxMin, xMin);
+              nxMax = Math.min(nxMax, xMax);
+
+              u.batch(function() {
+                u.setScale('x', { min: nxMin, max: nxMax });
+              });
+            }, { passive: false });   // passive:false is REQUIRED — without it, e.preventDefault() throws and page scrolls
+          }],
+        },
+      };
+    }
+
     // ─── Chart Lifecycle (Phase 3) ────────────────────────────────
     function updateResetButtonVisibility(u) {
       const btn = document.getElementById('reset-zoom-btn');
@@ -881,6 +934,10 @@
             }
           }],
         },
+
+        plugins: [
+          wheelZoomPlugin({ factor: 0.75 }),
+        ],
 
         // Reserve minimap space: chart height fills container (Phase 3 will add minimap below)
         padding: [10, 0, 0, 0],
