@@ -871,6 +871,82 @@
       };
     }
 
+    // ─── Tooltip Plugin (NAVG-04) ─────────────────────────────────
+    // Source pattern: uPlot official tooltips.html demo — adapted
+    // Shows HH:MM time header + raw values of all visible series at cursor position.
+    // Left/right flip keeps tooltip inside chart boundary.
+    function tooltipPlugin() {
+      let tooltip;
+      const OFFSET = 12;   // px gap between cursor line and tooltip edge
+
+      function init(u) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'chart-tooltip';
+        u.over.appendChild(tooltip);
+
+        // Hide on mouse leave, show on mouse enter
+        u.over.addEventListener('mouseleave', function() {
+          tooltip.style.display = 'none';
+        });
+        u.over.addEventListener('mouseenter', function() {
+          if (tooltip.innerHTML) tooltip.style.display = '';
+        });
+      }
+
+      function setCursor(u) {
+        const idx = u.cursor.idx;
+        if (idx == null) { tooltip.style.display = 'none'; return; }
+
+        const left = u.cursor.left;
+        const top  = u.cursor.top;
+
+        // Build time header: HH:MM in UTC (matching the X-axis format)
+        const ts = u.data[0][idx];
+        const d  = new Date(ts * 1000);
+        const hh = String(d.getUTCHours()).padStart(2, '0');
+        const mm = String(d.getUTCMinutes()).padStart(2, '0');
+
+        let html = '<div class="tt-time">' + hh + ':' + mm + '</div>';
+
+        // One row per visible series — skip series[0] (X-axis placeholder)
+        for (let i = 1; i < u.series.length; i++) {
+          const s = u.series[i];
+          if (s.show === false) continue;   // skip hidden series (Phase 4 may hide some)
+
+          const rawVal = u.data[i][idx];
+          // Display raw value from CSV — no forced rounding (per CONTEXT.md)
+          const disp = (rawVal == null || isNaN(rawVal)) ? '\u2014' : rawVal;
+          // s.stroke may be a function or string — resolve to string for the swatch
+          const color = typeof s.stroke === 'function' ? s.stroke(u, i) : (s.stroke || '#e0e0e0');
+
+          html += '<div class="tt-row">' +
+            '<span class="tt-swatch" style="background:' + color + '"></span>' +
+            '<span class="tt-label">' + s.label + '</span>' +
+            '<span class="tt-val">' + disp + '</span>' +
+            '</div>';
+        }
+
+        tooltip.innerHTML = html;
+        tooltip.style.display = '';
+
+        // Left/right flip: if tooltip would overflow right edge, show it to the left of cursor
+        const chartW = u.over.clientWidth;
+        const ttW    = tooltip.offsetWidth || 180;
+        const flipX  = (left + ttW + OFFSET) > chartW;
+        tooltip.style.left = (flipX ? (left - ttW - OFFSET) : (left + OFFSET)) + 'px';
+
+        // Vertical position: keep top edge inside chart (don't go above 0)
+        tooltip.style.top = Math.max(0, top - 20) + 'px';
+      }
+
+      return {
+        hooks: {
+          init:      [init],
+          setCursor: [setCursor],
+        },
+      };
+    }
+
     // ─── Chart Lifecycle (Phase 3) ────────────────────────────────
     function updateResetButtonVisibility(u) {
       const btn = document.getElementById('reset-zoom-btn');
@@ -992,6 +1068,7 @@
 
         plugins: [
           wheelZoomPlugin({ factor: 0.75 }),
+          tooltipPlugin(),
         ],
 
         // Reserve minimap space: chart height fills container (Phase 3 will add minimap below)
