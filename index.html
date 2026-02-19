@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OekoFEN CSV Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="uPlot.min.css">
   <style>
     *, *::before, *::after {
@@ -13,32 +16,59 @@
     }
 
     :root {
-      --bg-primary:    #1a1a2e;
-      --bg-secondary:  #16213e;
-      --bg-surface:    #0f3460;
-      --text-primary:  #e0e0e0;
-      --text-muted:    #a0a0b8;
-      --accent:        #4fc3f7;
-      --accent-dim:    rgba(79, 195, 247, 0.15);
-      --accent-border: rgba(79, 195, 247, 0.6);
-      --danger:        #ef5350;
-      --success:       #66bb6a;
-      --warning:       #ffa726;
-      --border:        rgba(255, 255, 255, 0.08);
-      --radius:        8px;
-      --font:          system-ui, -apple-system, 'Segoe UI', sans-serif;
+      /* Surfaces — Apple macOS Dark */
+      --bg-base:   #000000;
+      --bg-l1:     #1c1c1e;
+      --bg-l2:     #2c2c2e;
+      --bg-l3:     #3a3a3c;
+      /* Text */
+      --text-1:    rgba(255, 255, 255, 1.00);
+      --text-2:    rgba(255, 255, 255, 0.60);
+      --text-3:    rgba(255, 255, 255, 0.28);
+      /* Accent — Apple blue (dark) */
+      --blue:      #0a84ff;
+      --blue-dim:  rgba(10, 132, 255, 0.15);
+      --blue-glow: rgba(10, 132, 255, 0.30);
+      /* Separators */
+      --sep:       rgba(255, 255, 255, 0.08);
+      --sep-strong: rgba(255, 255, 255, 0.14);
+      /* Glass — signature macOS frosted effect */
+      --glass-bg:  rgba(28, 28, 30, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.09);
+      /* Radius scale */
+      --r-sm:  7px;
+      --r-md:  11px;
+      --r-lg:  16px;
+      --r-xl:  20px;
+      --r-pill: 100px;
+      /* Fonts */
+      --font:      'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'DM Mono', 'SF Mono', 'Courier New', monospace;
+      /* Layout — original pixel values kept */
       --toolbar-height: 32px;
       --minimap-height: 72px;
+      /* Backward compat */
+      --accent:       #0a84ff;
+      --accent-dim:   rgba(10, 132, 255, 0.15);
+      --accent-border: rgba(10, 132, 255, 0.45);
+      --bg-primary:   #000000;
+      --bg-secondary: #1c1c1e;
+      --text-primary: rgba(255, 255, 255, 0.88);
+      --text-muted:   rgba(255, 255, 255, 0.40);
+      --border:       rgba(255, 255, 255, 0.08);
+      --radius:       11px;
     }
 
     html, body {
       height: 100%;
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      background: var(--bg-base);
+      color: var(--text-1);
       font-family: var(--font);
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.5;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* ─── Drop Zone ──────────────────────────────────────────── */
@@ -47,85 +77,137 @@
       position: fixed;
       inset: 0;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg-primary);
-      transition: background 0.2s ease, border-color 0.15s, background-color 0.15s;
-      z-index: 10;
-    }
-
-    #drop-zone.drag-over {
-      background: var(--bg-secondary);
-    }
-
-    #drop-zone.drag-over #drop-message {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-    }
-
-    #drop-message {
-      display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
-      padding: 60px 80px;
-      border: 2px dashed var(--accent-border);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.02);
-      text-align: center;
-      transition: border-color 0.2s ease, background 0.2s ease;
-      animation: pulse-border 3s ease-in-out infinite;
+      justify-content: center;
+      background: var(--bg-base);
+      z-index: 10;
+      transition: background 0.3s;
     }
 
-    @keyframes pulse-border {
-      0%, 100% { border-color: var(--accent-border); }
-      50%       { border-color: var(--accent); }
+    /* Ambient glow behind the card — deepens on drag-over */
+    #drop-zone::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -58%);
+      width: 480px; height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(10,132,255,0.07) 0%, transparent 70%);
+      pointer-events: none;
+      transition: opacity 0.4s;
+      opacity: 1;
     }
 
-    #drop-zone.drag-over #drop-message {
-      animation: none;
+    #drop-zone.drag-over::after {
+      opacity: 2.5; /* intentionally > 1 for brightness boost via radial-gradient composition */
     }
 
-    #drop-icon {
-      font-size: 56px;
-      line-height: 1;
-      color: var(--accent);
-      opacity: 0.8;
+    /* Small app label above card */
+    .drop-eyebrow {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--text-3);
+      white-space: nowrap;
       user-select: none;
     }
 
-    #drop-message p {
-      font-size: 18px;
-      color: var(--text-primary);
+    #drop-message {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 52px 80px 48px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-xl);
+      text-align: center;
+      box-shadow:
+        0 0 0 0.5px rgba(255,255,255,0.04) inset,
+        0 2px 1px rgba(255,255,255,0.04) inset,
+        0 24px 64px rgba(0,0,0,0.55),
+        0 4px 16px rgba(0,0,0,0.35);
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+      animation: card-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes card-enter {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    #drop-zone.drag-over #drop-message {
+      border-color: rgba(10, 132, 255, 0.55);
+      box-shadow:
+        0 0 0 3px rgba(10, 132, 255, 0.18),
+        0 0 0 0.5px rgba(255,255,255,0.04) inset,
+        0 2px 1px rgba(255,255,255,0.04) inset,
+        0 24px 64px rgba(0,0,0,0.55);
+      background: rgba(10, 132, 255, 0.05);
+    }
+
+    #drop-icon {
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 2px;
+      user-select: none;
+    }
+
+    #drop-zone.drag-over #drop-icon {
+      color: var(--blue);
+    }
+
+    .drop-title {
+      font-size: 17px;
       font-weight: 500;
+      color: var(--text-1);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
     }
 
     #drop-message p.sub {
-      font-size: 13px;
-      color: var(--text-muted);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-3);
+      letter-spacing: 0.02em;
     }
 
     #pick-file-btn {
-      margin-top: 4px;
-      padding: 10px 28px;
-      background: var(--accent);
-      color: #0d0d1a;
+      margin-top: 6px;
+      padding: 8px 22px;
+      background: var(--blue);
+      color: #ffffff;
       border: none;
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-weight: 600;
+      border-radius: var(--r-pill);
+      font-size: 13px;
+      font-weight: 500;
       font-family: var(--font);
       cursor: pointer;
-      transition: opacity 0.15s ease, transform 0.1s ease;
+      letter-spacing: -0.01em;
+      transition: opacity 0.15s, transform 0.1s;
     }
 
     #pick-file-btn:hover {
-      opacity: 0.88;
-      transform: translateY(-1px);
+      opacity: 0.85;
     }
 
     #pick-file-btn:active {
-      transform: translateY(0);
+      transform: scale(0.97);
+      opacity: 0.75;
     }
 
     /* ─── App Header ─────────────────────────────────────────── */
@@ -136,21 +218,38 @@
       height: 50px;
       display: none;
       align-items: center;
-      justify-content: space-between;
       padding: 0 16px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 0.5px solid var(--sep);
       z-index: 20;
-      gap: 12px;
+      gap: 10px;
     }
 
     #app-header.visible {
       display: flex;
     }
 
+    /* App name — muted, left-aligned */
+    #app-header::before {
+      content: 'OekoFEN';
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-2);
+      flex-shrink: 0;
+      padding-right: 12px;
+      border-right: 0.5px solid var(--sep-strong);
+      margin-right: 2px;
+      line-height: 1;
+    }
+
     #header-filename {
       font-size: 13px;
-      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-weight: 400;
+      color: var(--text-3);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -158,26 +257,28 @@
     }
 
     #header-filename strong {
-      color: var(--text-primary);
-      font-weight: 600;
+      color: var(--text-2);
+      font-weight: 400;
     }
 
     #load-another-btn {
       padding: 5px 14px;
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent-border);
-      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-2);
+      border: none;
+      border-radius: var(--r-pill);
       font-size: 12px;
       font-weight: 500;
       font-family: var(--font);
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.15s ease;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
     }
 
     #load-another-btn:hover {
-      background: var(--accent-dim);
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-1);
     }
 
     /* ─── Data Summary ───────────────────────────────────────── */
@@ -185,27 +286,52 @@
     #data-summary {
       position: fixed;
       top: 50px; left: 0; right: 0;
+      height: 40px;
       display: none;
-      background: #16213e;
-      border-bottom: 1px solid #2d2d4e;
-      padding: 8px 16px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid var(--sep);
+      padding: 0 16px;
       z-index: 15;
     }
 
     #data-summary.visible {
-      display: block;
+      display: flex;
     }
 
     .summary-bar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 13px;
-      color: #b0bec5;
+      align-items: center;
+      gap: 0;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-3);
+      white-space: nowrap;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .summary-bar > span {
+      padding: 0 14px;
+      border-right: 0.5px solid var(--sep-strong);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .summary-bar > span:first-child { padding-left: 0; }
+
+    .summary-bar > span:last-child {
+      border-right: none;
+      flex-shrink: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .summary-bar strong {
-      color: #81d4fa;
+      color: var(--text-2);
+      font-weight: 500;
     }
 
     /* ─── Toolbar Row ────────────────────────────────────────── */
@@ -216,10 +342,12 @@
       height: var(--toolbar-height);
       display: none;
       align-items: center;
-      padding: 0 12px;
+      padding: 0 14px;
       gap: 8px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid var(--sep);
       z-index: 15;
     }
 
@@ -228,20 +356,21 @@
     }
 
     #reset-zoom-btn {
-      padding: 3px 12px;
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent-border);
-      border-radius: var(--radius);
-      font-size: 12px;
+      padding: 2px 12px;
+      background: var(--blue-dim);
+      color: var(--blue);
+      border: none;
+      border-radius: var(--r-pill);
+      font-size: 11px;
       font-weight: 500;
       font-family: var(--font);
       cursor: pointer;
-      transition: background 0.15s ease;
+      letter-spacing: -0.01em;
+      transition: background 0.15s, opacity 0.15s;
     }
 
     #reset-zoom-btn:hover {
-      background: var(--accent-dim);
+      background: var(--blue-glow);
     }
 
     /* ─── Chart Area ─────────────────────────────────────────── */
@@ -252,7 +381,7 @@
       left: 0; right: 0; bottom: 100px;
       display: none;
       overflow: hidden;
-      background: var(--bg-primary);
+      background: var(--bg-base);
     }
 
     #chart-area.visible {
@@ -266,67 +395,69 @@
       bottom: 28px; left: 0; right: 0;
       height: var(--minimap-height);
       display: none;
-      background: var(--bg-primary);
-      border-top: 1px solid var(--border);
+      background: var(--bg-l1);
+      border-top: 0.5px solid var(--sep);
     }
 
     #minimap-area.visible {
       display: block;
     }
 
-    /* ─── uPlot Dark Theme Overrides ─────────────────────────── */
+    /* ─── uPlot Overrides ────────────────────────────────────── */
+
     .u-wrap {
-      background: var(--bg-primary) !important;
+      background: var(--bg-base) !important;
     }
 
-    /* Minimap zoom selection highlight — uPlot default is a dim grey;
-       override with a bright accent-blue so the zoom window is clearly visible
-       on the dark background (Check 18). */
+    /* Blue zoom-region highlight on minimap */
     #minimap-area .u-select {
-      background: rgba(79, 195, 247, 0.25) !important;
-      border: 1px solid rgba(79, 195, 247, 0.7) !important;
+      background: rgba(10, 132, 255, 0.20) !important;
+      border: 1px solid rgba(10, 132, 255, 0.55) !important;
     }
 
-    /* Hide minimap cursor crosshair lines visually — cursor.show must be true
-       for drag interaction to work (show:false disables drag too), but we don't
-       want a visible crosshair in the compact 72px minimap (Check 19). */
+    /* Hide minimap cursor crosshair lines */
     #minimap-area .u-cursor-x,
     #minimap-area .u-cursor-y,
     #minimap-area .u-cursor-pt {
       display: none !important;
     }
 
-    /* Floating legend: top-left overlay matching the OekoFEN PNG style */
+    /* Floating legend — frosted glass style */
     .u-legend {
       position: absolute !important;
-      top: 30px !important;
+      top: 28px !important;
       left: 10px !important;
-      background: rgba(22, 33, 62, 0.88) !important;
-      border: 1px solid rgba(255,255,255,0.12) !important;
-      border-radius: 6px !important;
-      padding: 6px 10px !important;
+      background: rgba(0, 0, 0, 0.72) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      border: 0.5px solid var(--sep-strong) !important;
+      border-radius: var(--r-md) !important;
+      padding: 8px 12px !important;
       font-size: 11px !important;
-      color: var(--text-primary) !important;
+      font-family: var(--font) !important;
+      color: var(--text-2) !important;
       pointer-events: none !important;
       z-index: 10 !important;
     }
 
     .u-legend .u-series td {
-      padding: 1px 4px !important;
+      padding: 1.5px 4px !important;
     }
 
     .u-legend .u-marker {
       width: 12px !important;
-      height: 3px !important;
-      margin-right: 4px !important;
+      height: 2px !important;
+      margin-right: 5px !important;
       border-radius: 1px !important;
     }
 
-    /* Chart title */
+    /* Chart date title */
     .u-title {
-      color: var(--text-muted) !important;
-      font-size: 13px !important;
-      font-weight: 500 !important;
+      color: var(--text-3) !important;
+      font-family: var(--font) !important;
+      font-size: 11px !important;
+      font-weight: 400 !important;
+      letter-spacing: 0.02em !important;
     }
 
     /* ─── Status Bar ─────────────────────────────────────────── */
@@ -337,16 +468,20 @@
       height: 28px;
       display: flex;
       align-items: center;
-      padding: 0 12px;
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
+      padding: 0 16px;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--sep);
       font-size: 11px;
-      color: var(--text-muted);
+      font-weight: 400;
+      color: var(--text-3);
       z-index: 20;
     }
 
     #status-text {
       flex: 1;
+      letter-spacing: 0.01em;
     }
 
     /* ─── Toast Notifications ────────────────────────────────── */
@@ -364,65 +499,78 @@
 
     .toast {
       padding: 12px 16px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 12px;
+      font-weight: 400;
+      font-family: var(--font);
       min-width: 260px;
-      max-width: 400px;
+      max-width: 380px;
       pointer-events: auto;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      animation: toast-in 0.25s ease forwards;
+      background: rgba(28, 28, 30, 0.90);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 0.5px solid rgba(255, 255, 255, 0.10);
+      border-radius: var(--r-md);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0,0,0,0.3);
+      animation: toast-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      color: var(--text-2);
     }
 
     @keyframes toast-in {
-      from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+      from { opacity: 0; transform: translateY(-8px) scale(0.95); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .toast.out {
-      animation: toast-out 0.25s ease forwards;
+      animation: toast-out 0.2s ease forwards;
     }
 
     @keyframes toast-out {
       from { opacity: 1; transform: translateY(0) scale(1); }
-      to   { opacity: 0; transform: translateY(-8px) scale(0.96); }
+      to   { opacity: 0; transform: translateY(-6px) scale(0.97); }
     }
 
-    .toast-error   { background: #2d1414; border: 1px solid var(--danger); color: #ef9a9a; }
-    .toast-warning { background: #2d2214; border: 1px solid var(--warning); color: #ffcc80; }
-    .toast-info    { background: #142233; border: 1px solid var(--accent-border); color: var(--accent); }
-    .toast-success { background: #142014; border: 1px solid var(--success); color: #a5d6a7; }
+    .toast-error   { border-color: rgba(255, 69, 58, 0.40); color: #ff6b6b; }
+    .toast-warning { border-color: rgba(255, 159, 10, 0.40); color: #ffb340; }
+    .toast-info    { border-color: rgba(10, 132, 255, 0.40); color: var(--blue); }
+    .toast-success { border-color: rgba(50, 215, 75, 0.35); color: #32d74b; }
 
-    /* ─── Cursor Tooltip (NAVG-04) ───────────────────────────────── */
+    /* ─── Cursor Tooltip (NAVG-04) ───────────────────────────── */
 
     #chart-tooltip {
       position: absolute;
       display: none;
       pointer-events: none;
       z-index: 100;
-      background: rgba(22, 33, 62, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
-      padding: 8px 10px;
+      background: rgba(20, 20, 22, 0.90);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--r-md);
+      padding: 10px 12px;
+      font-family: var(--font);
       font-size: 12px;
-      color: var(--text-primary);
-      min-width: 140px;
-      max-width: 240px;
+      color: var(--text-2);
+      min-width: 150px;
+      max-width: 250px;
       white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
 
     .tt-time {
+      font-size: 15px;
       font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 4px;
-      font-size: 13px;
+      color: var(--text-1);
+      margin-bottom: 7px;
+      padding-bottom: 7px;
+      border-bottom: 0.5px solid var(--sep-strong);
+      letter-spacing: -0.01em;
     }
 
     .tt-row {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 1px 0;
+      gap: 7px;
+      padding: 1.5px 0;
     }
 
     .tt-swatch {
@@ -434,7 +582,9 @@
 
     .tt-label {
       flex: 1;
-      color: var(--text-muted);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-3);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -442,8 +592,10 @@
     }
 
     .tt-val {
+      font-family: var(--font-mono);
+      font-size: 12px;
       font-variant-numeric: tabular-nums;
-      color: var(--text-primary);
+      color: var(--text-1);
       text-align: right;
       flex-shrink: 0;
     }
@@ -453,11 +605,20 @@
 
   <!-- Drop zone: full-page when no file loaded -->
   <div id="drop-zone">
+    <div class="drop-eyebrow">OekoFEN Diagnostic Viewer</div>
     <div id="drop-message">
-      <div id="drop-icon">&#x1F4C4;</div>
-      <p>Drop an OekoFEN CSV file here</p>
+      <!-- File icon -->
+      <div id="drop-icon">
+        <svg width="40" height="48" viewBox="0 0 40 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 H24 L38 16 V46 H6 Z" rx="2"/>
+          <path d="M24 2 V16 H38"/>
+          <line x1="12" y1="26" x2="30" y2="26" stroke-width="1.25"/>
+          <line x1="12" y1="32" x2="30" y2="32" stroke-width="1.25"/>
+          <line x1="12" y1="38" x2="22" y2="38" stroke-width="1.25"/>
+        </svg>
+      </div>
+      <p class="drop-title">Drop your OekoFEN CSV file</p>
       <p class="sub">touch_YYYYMMDD.csv</p>
-      <p>or</p>
       <button id="pick-file-btn">Select File</button>
       <input type="file" id="file-input" accept=".csv" style="display:none">
     </div>
@@ -763,7 +924,7 @@
     ];
 
     const GROUP_COLORS = {
-      'Boiler':                { continuous: '#4fc3f7', binary: 'rgba(79,195,247,0.45)' },
+      'Boiler':                { continuous: '#4fc3f7', binary: 'rgba(255, 159, 10, 0.30)' },
       'Heating Circuit (HK1)': { continuous: '#ff8a65' },
       'Hot Water (WW1)':       { continuous: '#ce93d8' },
       'Buffer (PU1)':          { continuous: '#81c784' },
@@ -804,7 +965,7 @@
         const isBinary = col.type === 'discrete';
         const groupColors = GROUP_COLORS[col.group] || { continuous: '#e0e0e0' };
         const stroke = SERIES_COLOR_OVERRIDES[col.rawName] ||
-                       (isBinary ? (groupColors.binary || 'rgba(79,195,247,0.45)') : groupColors.continuous) ||
+                       (isBinary ? (groupColors.binary || 'rgba(255,159,10,0.30)') : groupColors.continuous) ||
                        '#e0e0e0';
 
         if (isBinary) {
@@ -1127,9 +1288,9 @@
         axes: [
           // X-axis: Unix seconds formatted as HH:MM in UTC
           {
-            stroke: '#a0a0b8',
-            grid:   { stroke: 'rgba(255,255,255,0.10)', width: 1 },
-            ticks:  { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            stroke: 'rgba(255, 255, 255, 0.30)',
+            grid:   { stroke: 'rgba(255, 255, 255, 0.06)', width: 1 },
+            ticks:  { stroke: 'rgba(255, 255, 255, 0.06)', width: 1 },
             // Minimum tick increment: 60 seconds (1 minute).
             // Prevents label crowding at high zoom levels — ticks will never be
             // placed more frequently than once per minute.
@@ -1144,9 +1305,9 @@
           {
             scale:  'y',
             side:   3,
-            stroke: '#a0a0b8',
-            grid:   { stroke: 'rgba(255,255,255,0.10)', width: 1 },
-            ticks:  { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            stroke: 'rgba(255, 255, 255, 0.30)',
+            grid:   { stroke: 'rgba(255, 255, 255, 0.06)', width: 1 },
+            ticks:  { stroke: 'rgba(255, 255, 255, 0.06)', width: 1 },
             values: (self, ticks) => ticks.map(v => v.toFixed(0)),
             size:   45,
           },
@@ -1154,7 +1315,7 @@
           {
             scale:  'binary',
             side:   1,
-            stroke: '#a0a0b8',
+            stroke: 'rgba(255, 255, 255, 0.30)',
             grid:   { show: false },
             ticks:  { show: false },
             values: (self, ticks) => ticks.map(v => (v === 1 ? 'On' : v === 0 ? 'Off' : '')),
@@ -1339,21 +1500,23 @@
         groups[col.group] = (groups[col.group] || 0) + 1;
       }
       const groupLines = Object.entries(groups)
-        .map(([g, n]) => `${g}: ${n} columns`)
-        .join(' | ');
+        .map(([g, n]) => `${g}: ${n}`)
+        .join(' · ');
 
       // Time range
       const ts = dataModel.timestamps;
-      const firstDate = ts.length > 0 ? new Date(ts[0] * 1000).toUTCString() : 'N/A';
-      const lastDate = ts.length > 0 ? new Date(ts[ts.length - 1] * 1000).toUTCString() : 'N/A';
+      const fmt = t => {
+        const d = new Date(t * 1000);
+        return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+      };
+      const timeRange = ts.length > 0 ? fmt(ts[0]) + '\u2013' + fmt(ts[ts.length - 1]) : 'N/A';
 
       summary.innerHTML = `
         <div class="summary-bar">
-          <span><strong>File:</strong> ${filename}</span>
-          <span><strong>Rows:</strong> ${dataModel.rowCount}</span>
-          <span><strong>Columns:</strong> ${dataModel.columns.length}</span>
-          <span><strong>Time:</strong> ${firstDate} &ndash; ${lastDate}</span>
-          <span><strong>Groups:</strong> ${groupLines}</span>
+          <span><strong>${dataModel.rowCount}</strong> rows</span>
+          <span><strong>${dataModel.columns.length}</strong> columns</span>
+          <span><strong>${timeRange}</strong></span>
+          <span>${groupLines}</span>
         </div>
       `;
     }

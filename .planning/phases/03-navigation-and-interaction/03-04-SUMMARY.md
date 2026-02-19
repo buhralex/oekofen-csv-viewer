@@ -1,31 +1,38 @@
 ---
 phase: 03-navigation-and-interaction
-plan: 04
+plan: "04"
 subsystem: ui
-tags: [uplot, minimap, zoom, overview, canvas]
+tags: [uplot, minimap, zoom, overview, canvas, javascript]
 
 # Dependency graph
 requires:
   - phase: 03-01
-    provides: AppState.onZoomChange stub, setScale hook wired to AppState.onZoomChange
+    provides: AppState.onZoomChange stub, setScale hook wired to AppState.onZoomChange, drag-to-zoom, reset button
+  - phase: 03-02
+    provides: scroll-wheel zoom with MIN_RANGE=300s enforcement
+  - phase: 03-03
+    provides: tooltipPlugin() cursor crosshair with value display
   - phase: 02-01
     provides: uPlot instance in AppState.chart, buildChartData(), DEFAULT_SERIES
 provides:
-  - createMinimap() function: secondary uPlot at 72px height with full-day data
-  - AppState.minimap { instance, updateSelection } — wired after createChart()
-  - Bidirectional zoom sync: main chart zoom highlights minimap; minimap drag zooms main chart
-  - Infinite loop prevention via setSelect(..., false)
-  - Minimap resize in onWindowResize()
-  - Minimap cleanup in destroyChart()
-affects: [04-parameter-management]
+  - createMinimap() function rendering secondary uPlot instance at 72px in #minimap-area
+  - AppState.minimap object with instance and updateSelection() function
+  - Bidirectional sync between main chart zoom and minimap highlight overlay
+  - Minimap drag-to-pan: user drags minimap to reposition main chart zoom window
+  - onWindowResize() extended to resize minimap alongside main chart
+  - destroyChart() extended to destroy minimap and clear #minimap-area
+  - Accent-blue select overlay CSS rule on #minimap-area .u-select for dark theme visibility
+affects: [04-series-management]
 
 # Tech tracking
 tech-stack:
   added: []
   patterns:
-    - "setSelect(opts, false) to suppress hook re-fire — prevents bidirectional infinite loop"
-    - "Thin series clone for minimap: width:0.5 for continuous, width:0 for binary"
-    - "bbox.height / devicePixelRatio to get CSS pixel height for setSelect"
+    - "setSelect(opts, false) second-arg pattern to prevent minimap setSelect hook re-firing and infinite loop"
+    - "Object.assign() series clone for minimap: width:0.5 continuous / width:0 binary to reduce visual noise at 72px"
+    - "cursor.show:true + cursor.drag.setScale:false in minimap — allows drag events while suppressing uPlot's built-in zoom-on-drag"
+    - "valToPos / posToVal conversion for pixel-to-timestamp mapping in minimap updateSelection and setSelect hook"
+    - "Pre-clamp zoom min/max before setScale for reliable floor enforcement — more reliable than hook-based clamping"
 
 key-files:
   created: []
@@ -33,75 +40,143 @@ key-files:
     - index.html
 
 key-decisions:
-  - "setSelect(opts, false) is CRITICAL — second argument false prevents minimap setSelect hook from re-firing and causing an infinite zoom loop"
-  - "Minimap series cloned from main series with width reduced (0.5/0) to avoid visual noise at 72px height"
-  - "minimap-area.innerHTML cleared in destroyChart() to remove uPlot DOM artifacts after destroy()"
-  - "buildChartData called second time for minimap data — same DEFAULT_SERIES, same data model"
+  - "setSelect(opts, false) is CRITICAL for the minimap anti-loop pattern: the false second argument suppresses the minimap setSelect hook from firing when updateSelection() is called programmatically"
+  - "cursor.show:false disables drag in uPlot — minimap drag requires cursor.show:true with cursor.drag.setScale:false"
+  - "display:block required for tooltip show — display:'' inherits CSS display:none from stylesheet rule"
+  - "Minimap select overlay styled with rgba(79,195,247,0.3) accent blue for visibility on dark navy theme"
+  - "Reset zoom must pass explicit {min: dataMin, max: dataMax} to setScale — {min:null, max:null} does not trigger full-range reset in uPlot 1.6.32"
+  - "300s drag-zoom floor implemented via pre-clamped values before calling setScale — hook-based approaches failed due to uPlot re-entrancy"
 
 patterns-established:
-  - "Secondary uPlot for overview: legend:false, axes:all hidden, cursor:false, select:true"
-  - "Clamp min/max timestamps before valToPos to prevent out-of-bounds setSelect calls"
+  - "Anti-loop pattern: minimap.setSelect(opts, false) — always pass false when calling setSelect programmatically to suppress the hook"
+  - "Minimap lifecycle: createMinimap() in createChart(), destroy in destroyChart(), resize in onWindowResize()"
+  - "Zoom floor enforcement: pre-clamp computed extents before setScale call, not in hooks"
 
-requirements-completed: [NAVG-05]
+requirements-completed:
+  - NAVG-05
 
 # Metrics
-duration: 2min
+duration: 36min
 completed: 2026-02-19
 ---
 
 # Phase 3 Plan 04: Minimap Overview Summary
 
-**Secondary uPlot minimap at 72px showing full-day data with zoom region highlight overlay and drag-to-pan, bidirectional sync via setSelect(opts, false) to prevent infinite loop**
+**uPlot secondary minimap at 72px showing full day with accent-blue zoom-region highlight and bidirectional drag-to-pan; 5 bugs found and fixed during human verification of all 23 checks**
 
 ## Performance
 
-- **Duration:** ~2 min
-- **Started:** 2026-02-19T19:41:06Z
-- **Completed:** 2026-02-19T19:42:29Z
-- **Tasks:** 1 of 2 (Task 2 is human verification checkpoint — paused)
+- **Duration:** 36 min
+- **Started:** 2026-02-19T20:42:18+01:00
+- **Completed:** 2026-02-19T21:18:35+01:00
+- **Tasks:** 2 (1 auto implementation + 1 human-verify checkpoint)
 - **Files modified:** 1
 
 ## Accomplishments
-- `createMinimap()` added: secondary uPlot instance at 72px with full-day data, no legend, no axes, no crosshair
-- Bidirectional sync: main chart `setScale` hook calls `minimap.updateSelection()`, minimap `setSelect` hook calls `AppState.chart.setScale()`
-- Infinite loop prevented: `uMinimap.setSelect(opts, false)` suppresses the hook re-fire
-- `destroyChart()` updated to destroy minimap instance and clear `#minimap-area` DOM
-- `onWindowResize()` updated to resize both main chart and minimap on window resize
-- `AppState.minimap` stub added to AppState declaration
+
+- createMinimap() implemented: secondary uPlot at 72px height with full-day data, no axes, no legend
+- Bidirectional sync: main chart setScale hook calls minimap.updateSelection() via AppState.onZoomChange; minimap setSelect hook calls AppState.chart.setScale()
+- Anti-loop pattern: setSelect(opts, false) prevents infinite sync cycle between main chart and minimap
+- Minimap drag-to-pan working: user drags on minimap strip to reposition main chart zoom window
+- Minimap selection overlay styled with accent blue (rgba(79,195,247,0.3)) for visibility on dark navy theme
+- onWindowResize() and destroyChart() extended to handle minimap lifecycle correctly
+- All 23 Phase 3 verification checks passed with a real OekoFEN CSV file — all 5 NAVG requirements satisfied
 
 ## Task Commits
 
-Each task was committed atomically:
+Task commit:
 
 1. **Task 1: Implement createMinimap() and wire into createChart() and onWindowResize()** - `10dac1e` (feat)
 
-_Task 2 is a checkpoint:human-verify — no code changes, awaits human visual verification._
+Auto-fix commits applied during human checkpoint verification (Rule 1 bugs found in real browser):
 
-**Plan metadata:** _(pending — will be committed after checkpoint passes)_
+- `bd9a844` — Fix reset zoom uses explicit data extents (not null/null)
+- `7129750` — Fix 300s minimum zoom for drag-to-zoom (attempt 1: setSelect hook)
+- `ab3f619` — Fix tooltip display:block not display:''
+- `0bd7f2c` — Fix minimap zoom highlight visibility on dark theme
+- `a26f6ed` — Fix minimap drag (cursor.show:false disables drag)
+- `25a736a` — Fix drag zoom floor via setSelect hook (attempt 2)
+- `d23c97a` — Fix 300s zoom floor in setScale hook (attempt 3, partial)
+- `27cd4f0` — Fix drag-zoom pre-clamped values enforce 300s floor (FINAL)
+
+**Plan metadata:** (this commit)
 
 ## Files Created/Modified
-- `index.html` - createMinimap() function added (~90 lines), AppState.minimap stub, destroyChart() minimap cleanup, onWindowResize() minimap resize, createChart() minimap wiring
+
+- `index.html` — createMinimap() function, AppState.minimap wiring, onWindowResize() and destroyChart() minimap lifecycle, tooltip display:block fix, minimap select overlay accent color CSS, reset zoom explicit data extents, drag-zoom 300s floor via pre-clamped values before setScale
 
 ## Decisions Made
-- `setSelect(opts, false)` is the key infinite-loop guard: the second argument `false` tells uPlot not to fire the `setSelect` hook, so the minimap updating the main chart does not then re-trigger minimap update
-- Minimap series are cloned from the main series array with `Object.assign()`, then `width` reduced to `0.5` (continuous) or `0` (binary) to avoid visual noise in the compressed 72px view
-- `uMinimap.bbox.height / devicePixelRatio` correctly converts physical canvas pixels to CSS pixels for the `setSelect` height parameter
+
+- Used `setSelect(opts, false)` second argument to suppress minimap hook re-firing — the standard uPlot anti-loop pattern; not prominently documented but required for bidirectional sync
+- Switched minimap cursor config from `cursor.show:false` to `cursor.show:true` with `cursor.drag.setScale:false` — uPlot ties drag functionality to cursor visibility; show:false silently disables drag
+- Tooltip show fix: `element.style.display = 'block'` not `display = ''` — empty string falls back to the CSS stylesheet rule which specifies `display: none`
+- Reset zoom: `{min: dataMin, max: dataMax}` explicitly — `{min: null, max: null}` is not recognized by uPlot 1.6.32 as a full-range reset
+- Drag-zoom 300s floor: pre-clamp computed extents before calling setScale; hook-based approaches (setSelect hook, setScale hook) both suffered from uPlot re-entrancy
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Reset zoom did not return to full day**
+- **Found during:** Task 2 (human checkpoint, Check 7)
+- **Issue:** Passing `{min: null, max: null}` to setScale did not trigger full-range reset; chart stayed at previously zoomed range
+- **Fix:** Changed to `{min: dataMin, max: dataMax}` using explicit data array first/last timestamps
+- **Files modified:** index.html
+- **Verification:** Check 7 passed — Reset Zoom button and double-click return to full day
+- **Committed in:** bd9a844
+
+**2. [Rule 1 - Bug] Drag-zoom had no minimum range enforcement**
+- **Found during:** Task 2 (human checkpoint, Check 12)
+- **Issue:** Drag-zoom allowed zooming below the 5-minute minimum established for scroll zoom in 03-02; inconsistent behavior across zoom methods
+- **Fix:** Three attempts required. Final fix pre-clamps computed min/max values before the setScale call to ensure at least 300s span
+- **Files modified:** index.html
+- **Verification:** Check 12 passed — cannot drag-zoom below ~5 minutes
+- **Committed in:** 7129750 (attempt 1), 25a736a (attempt 2), d23c97a (attempt 3), 27cd4f0 (FINAL)
+
+**3. [Rule 1 - Bug] Tooltip not appearing on cursor move**
+- **Found during:** Task 2 (human checkpoint, Checks 14+15)
+- **Issue:** `element.style.display = ''` (empty string) inherits the CSS `display: none` applied to `#chart-tooltip` in the stylesheet; tooltip was never visible
+- **Fix:** Changed to `element.style.display = 'block'`
+- **Files modified:** index.html
+- **Verification:** Checks 14 and 15 passed — tooltip appears with crosshair and shows all series values
+- **Committed in:** ab3f619
+
+**4. [Rule 1 - Bug] Minimap zoom-region highlight nearly invisible on dark theme**
+- **Found during:** Task 2 (human checkpoint, Check 18)
+- **Issue:** Default uPlot select overlay uses grey fill that blends with the dark navy theme (#1a1a2e)
+- **Fix:** Added CSS rule for `#minimap-area .u-select` with `background: rgba(79,195,247,0.3)` matching the app's --accent-color variable
+- **Files modified:** index.html
+- **Verification:** Check 18 passed — zoom highlight clearly visible as blue band on minimap
+- **Committed in:** 0bd7f2c
+
+**5. [Rule 1 - Bug] Minimap drag broken — cursor.show:false disables drag**
+- **Found during:** Task 2 (human checkpoint, Check 19)
+- **Issue:** Plan specified `cursor.show:false` for the minimap. In uPlot, cursor visibility gates drag event processing — with show:false, drag events are silently ignored and drag-to-pan did not work
+- **Fix:** Changed to `cursor.show:true` with `cursor.drag.setScale:false` to enable drag events while suppressing uPlot's built-in zoom-on-drag; the minimap setSelect hook handles the zoom redirect
+- **Files modified:** index.html
+- **Verification:** Check 19 passed — dragging in minimap pans main chart correctly
+- **Committed in:** a26f6ed
+
+---
+
+**Total deviations:** 5 auto-fixed bugs (all Rule 1 — incorrect behavior found during human verification)
+**Impact on plan:** All 5 fixes were direct corrections to the minimap implementation and pre-existing interaction features (tooltip, reset zoom) verified in a real browser for the first time during this plan's checkpoint. No scope creep.
 
 ## Issues Encountered
-None.
+
+- The 300s drag-zoom floor required three iterations: the setSelect hook fires before setScale completes a drag, causing wrong clamping; the setScale hook triggered uPlot re-entrancy; the final pre-clamp approach (computing clamped values before passing to setScale) proved reliable across all zoom sources.
+- uPlot's `cursor.show:false` silently disabling drag is undocumented behavior — required runtime diagnosis by observing drag events not firing during the verification checkpoint.
 
 ## User Setup Required
+
 None - no external service configuration required.
 
 ## Next Phase Readiness
-- NAVG-05 implementation complete — pending human visual verification (Task 2 checkpoint)
-- All 5 NAVG requirements implemented: drag zoom (01), scroll zoom (02), reset button (03), tooltip (04), minimap (05)
-- Phase 3 complete after checkpoint approval
-- Phase 4 (parameter management) can begin: AppState.chart, AppState.minimap, AppState.chartSeries all available
+
+- All 5 NAVG requirements (NAVG-01 through NAVG-05) satisfied and human-verified with a real OekoFEN CSV file
+- Phase 3 complete — all navigation and interaction features working together without conflict or regression
+- Phase 4 (Series Management) can proceed: AppState.chart, AppState.minimap, buildChartData(), DEFAULT_SERIES all available
+- Phase 4 should decide whether minimap reflects only active (visible) series or always shows full DEFAULT_SERIES — currently always shows full set
 
 ---
 *Phase: 03-navigation-and-interaction*
