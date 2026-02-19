@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 4 of 4 (Parameter Management) — CONTEXT READY
-Plan: 0 of 4 complete
-Status: Phase 4 context gathered — view tabs (6 presets), series toggle via legend, custom picker modal, localStorage persistence decisions locked; ready for /gsd:plan-phase 4
-Last activity: 2026-02-19 — Phase 4 context written: 04-CONTEXT.md with all implementation decisions
+Phase: 4 of 4 (Parameter Management) — IN PROGRESS
+Plan: 1 of 4 complete
+Status: 04-01 complete — Phase 4 state machine + view tab bar live; pointer-events fix applied; ready for 04-02 (legend click toggle)
+Last activity: 2026-02-19 — 04-01 executed: VIEW_GROUPS, buildViewPresets, setActiveView, tab bar DOM wired to createChart/destroyChart
 
 Progress: [██████████] 75% (3/4 phases complete)
 
@@ -36,6 +36,7 @@ Progress: [██████████] 75% (3/4 phases complete)
 - Trend: Phase 3 avg inflated by 03-04 human checkpoint; implementation itself was fast
 
 *Updated after each plan completion*
+| Phase 04-parameter-management P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,10 @@ Recent decisions affecting current work:
 - [03-04]: Reset zoom requires explicit {min: dataMin, max: dataMax} — {min:null,max:null} not recognized by uPlot 1.6.32
 - [03-04]: Drag-zoom 300s floor via pre-clamped values before setScale — hook-based approaches failed due to uPlot re-entrancy
 - [03-04]: display:block required for tooltip show — display:'' inherits CSS display:none from stylesheet
+- [04-01]: pointer-events:auto on .u-legend — tooltip reads u.series[i].show, does not depend on legend being non-interactive; required for 04-02 legend click events
+- [04-01]: buildViewPresets() queries dataModel.columns at runtime — tabs only for groups present in file; AT column appended via name-part regex for context
+- [04-01]: setSeries(i, {show}, false) third-arg false during batch tab switch suppresses hooks; updateViewState() called once after loop
+- [04-01]: #params-btn placed in HTML as display:none stub, shown/hidden with tab bar; wiring deferred to 04-03
 
 ### Pending Todos
 
@@ -99,5 +104,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Phase 4 context written (04-CONTEXT.md); ready to /gsd:plan-phase 4
-Resume file: .planning/phases/04-parameter-management/04-CONTEXT.md
+Stopped at: Completed 04-01-PLAN.md (Phase 4 state machine + view tab bar)
+Resume file: .planning/phases/04-parameter-management/04-02-PLAN.md
