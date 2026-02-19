@@ -1639,6 +1639,9 @@
       // Phase 4.2: Wire legend click toggle
       wireLegendClicks(AppState.chart);
 
+      // Phase 4.4: Restore saved prefs (MUST be after minimap is fully wired above)
+      applyRestoredPrefs(AppState.dataModel, _viewPresets);
+
       setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
     }
 
@@ -1912,13 +1915,13 @@
     // 1. Reads current visibility from chart.
     // 2. Matches against presets.
     // 3. Updates tab highlight and Custom indicator.
-    // 4. (Phase 4.4: also persists to localStorage — savePrefs() added in 04-04.)
+    // 4. Persists to localStorage (Phase 4.4).
     function updateViewState() {
       const visibleRawNames = getVisibleRawNames();
       const matchedView = matchPreset(visibleRawNames, _viewPresets);
       _activeView = matchedView;
       updateTabHighlight(matchedView);
-      // savePrefs() inserted here by 04-04
+      savePrefs(_activeView, visibleRawNames);   // Phase 4.4: persist on every change
     }
 
     // Update the active tab highlight and Custom indicator DOM.
@@ -2121,6 +2124,100 @@
     function closePickerModal() {
       const modal = document.getElementById('picker-modal');
       if (modal) modal.remove();
+    }
+
+    // ─── Phase 4.4: localStorage persistence ─────────────────
+
+    const PREFS_KEY = 'oekofen-viewer-prefs';
+
+    // Persist current view and visible series to localStorage.
+    // Shape: { activeView: string, visibleSeries: string[] }
+    // Called from updateViewState() after every visibility change.
+    // Wrapped in try/catch for QuotaExceededError and SecurityError (Safari private mode).
+    function savePrefs(activeView, visibleSeries) {
+      try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify({
+          activeView,
+          visibleSeries,
+        }));
+      } catch (e) {
+        // Silent degradation — persistence is a convenience, not required for chart to work
+        console.warn('[savePrefs] localStorage write failed:', e.name);
+      }
+    }
+
+    // Load persisted prefs from localStorage.
+    // Returns null if missing, invalid JSON, or wrong shape.
+    function loadPrefs() {
+      try {
+        const raw = localStorage.getItem(PREFS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        // Validate shape: must have visibleSeries as an array
+        if (typeof parsed !== 'object' || !Array.isArray(parsed.visibleSeries)) return null;
+        return parsed;
+      } catch (e) {
+        console.warn('[loadPrefs] localStorage read failed:', e.name);
+        return null;
+      }
+    }
+
+    // Restore saved prefs to the live chart after createChart() + minimap wiring.
+    // Validates each saved rawName against dataModel.columns — only restores series
+    // that actually exist in the current file.
+    // Falls back to DEFAULT_SERIES (current chart state) with a warning toast
+    // if zero saved series survive validation.
+    function applyRestoredPrefs(dataModel, presets) {
+      const prefs = loadPrefs();
+      if (!prefs) return;  // no saved prefs — stay with default All view
+
+      // Validate: only keep rawNames that exist in the current data model
+      const validSeries = prefs.visibleSeries.filter(rn =>
+        dataModel.columns.some(c => c.rawName === rn)
+      );
+
+      if (validSeries.length === 0) {
+        // Saved series are all absent from the new file — fall back to defaults
+        showToast('Saved settings could not be applied — using defaults', 'warning');
+        return;
+      }
+
+      const u = AppState.chart;
+      if (!u) return;
+
+      const validSet = new Set(validSeries);
+
+      // Apply visibility to each series; suppress hook (false) during loop
+      for (let i = 1; i < u.series.length; i++) {
+        const rawName = u.series[i].label;
+        const shouldShow = validSet.has(rawName);
+        if (u.series[i].show !== shouldShow) {
+          u.setSeries(i, { show: shouldShow }, false);
+        }
+      }
+
+      // Sync legend row inline styles to restored state
+      const legend = u.root ? u.root.querySelector('.u-legend') : null;
+      if (legend) {
+        const tbody = legend.querySelector('tbody');
+        if (tbody) {
+          const rows = Array.from(tbody.childNodes).filter(n => n.nodeType === 1);
+          rows.forEach((row, rowIdx) => {
+            const seriesIdx = rowIdx + 1;
+            if (seriesIdx < u.series.length) {
+              const isHidden = u.series[seriesIdx].show === false;
+              applyLegendRowStyle(row, isHidden);
+            }
+          });
+        }
+      }
+
+      // Restore tab indicator state
+      const matchedView = matchPreset(validSeries, presets);
+      _activeView = matchedView;
+      updateTabHighlight(matchedView);
+
+      // NOTE: Do NOT call savePrefs() here — we're restoring, not changing prefs
     }
 
     // Open the parameter picker modal.
