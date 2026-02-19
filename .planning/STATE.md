@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 3 of 4 (Navigation and Interaction) — IN PROGRESS
-Plan: 2 of 4 complete (03-02 complete)
-Status: Phase 3 in progress — drag-to-zoom, reset button, scroll-wheel zoom complete; plans 03-03 and 03-04 remain
-Last activity: 2026-02-19 — 03-02 complete: wheelZoomPlugin() cursor-centered scroll zoom, passive:false listener, clamped to data bounds
+Plan: 3 of 4 complete (03-03 complete)
+Status: Phase 3 in progress — drag-to-zoom, reset button, scroll-wheel zoom, cursor tooltip complete; plan 03-04 remains
+Last activity: 2026-02-19 — 03-03 complete: tooltipPlugin() with HH:MM time header, per-series raw values, left/right flip positioning
 
-Progress: [███████░░░] 65%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -29,10 +29,10 @@ Progress: [███████░░░] 65%
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | ~80 min | ~27 min |
 | 2. Chart Rendering | 2/3 | ~33 min | ~16 min |
-| 3. Navigation and Interaction | 2/4 | ~3 min | ~1.5 min |
+| 3. Navigation and Interaction | 3/4 | ~4 min | ~1.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (~25 min), 02-02 (~8 min), 03-01 (~2 min), 03-02 (~1 min)
+- Last 5 plans: 02-01 (~25 min), 02-02 (~8 min), 03-01 (~2 min), 03-02 (~1 min), 03-03 (~1 min)
 - Trend: Steady (Phase 3 plans are small focused additions)
 
 *Updated after each plan completion*
@@ -74,6 +74,10 @@ Recent decisions affecting current work:
 - [03-02]: factor:0.75 per scroll tick — 25% range change per zoom step, matches uPlot demo pattern
 - [03-02]: MIN_RANGE=300s enforces 5-minute minimum visible window for scroll zoom
 - [03-02]: Range-shift clamping at data edges: shifts entire window to preserve requested range width (not truncation)
+- [03-03]: tooltipPlugin() uses init hook to append #chart-tooltip div to u.over and setCursor hook for live value display
+- [03-03]: OFFSET=12px gap between cursor line and tooltip edge; tooltip.offsetWidth || 180 fallback for first-render width
+- [03-03]: Left/right flip: (left + ttW + OFFSET) > chartW triggers tooltip to render left of cursor line
+- [03-03]: s.stroke resolved via typeof check — handles uPlot gradient stroke functions; no forced rounding on raw values (per CONTEXT.md)
 
 ### Pending Todos
 
@@ -89,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 03-02-PLAN.md — scroll-wheel zoom plugin implemented
-Resume file: .planning/phases/03-navigation-and-interaction/03-02-SUMMARY.md
+Stopped at: Completed 03-03-PLAN.md — cursor crosshair tooltip implemented
+Resume file: .planning/phases/03-navigation-and-interaction/03-03-SUMMARY.md

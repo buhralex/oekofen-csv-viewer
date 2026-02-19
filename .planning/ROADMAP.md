@@ -65,8 +65,8 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Layout foundation and drag-to-zoom: CSS layout (toolbar + minimap), cursor/select enabled in createChart(), drag-zoom, reset button, double-click reset
-- [ ] 03-02-PLAN.md — Scroll-wheel zoom plugin: cursor-centered wheel zoom, page-scroll guard, zoom limits (5 min to full day)
-- [ ] 03-03-PLAN.md — Cursor crosshair and tooltip: tooltipPlugin() with HH:MM header and all visible series values, left/right flip positioning
+- [x] 03-02-PLAN.md — Scroll-wheel zoom plugin: cursor-centered wheel zoom, page-scroll guard, zoom limits (5 min to full day)
+- [x] 03-03-PLAN.md — Cursor crosshair and tooltip: tooltipPlugin() with HH:MM header and all visible series values, left/right flip positioning
 - [ ] 03-04-PLAN.md — Minimap overview: secondary uPlot instance, zoom region highlight, drag-to-pan, resize sync, human verification checkpoint
 
 ### Phase 4: Parameter Management
@@ -95,5 +95,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-02-17 |
 | 2. Chart Rendering | 2/2 | Complete    | 2026-02-18 |
-| 3. Navigation and Interaction | 1/4 | In progress | - |
+| 3. Navigation and Interaction | 3/4 | In progress | - |
 | 4. Parameter Management | 0/4 | Not started | - |
