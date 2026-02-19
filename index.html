@@ -287,6 +287,15 @@
       border: 1px solid rgba(79, 195, 247, 0.7) !important;
     }
 
+    /* Hide minimap cursor crosshair lines visually — cursor.show must be true
+       for drag interaction to work (show:false disables drag too), but we don't
+       want a visible crosshair in the compact 72px minimap (Check 19). */
+    #minimap-area .u-cursor-x,
+    #minimap-area .u-cursor-y,
+    #minimap-area .u-cursor-pt {
+      display: none !important;
+    }
+
     /* Floating legend: top-left overlay matching the OekoFEN PNG style */
     .u-legend {
       position: absolute !important;
@@ -998,7 +1007,11 @@
         ],
 
         cursor: {
-          show:   false,                   // no crosshair in minimap
+          // show:false disables ALL cursor tracking including drag — use show:true
+          // and hide the crosshair lines via CSS instead (see #minimap-area .u-cursor rules).
+          show: true,
+          x:    true,
+          y:    false,
           drag: {
             setScale: false,               // minimap drag does NOT auto-zoom minimap's own scale
             x: true,
