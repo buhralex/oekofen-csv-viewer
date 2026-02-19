@@ -78,13 +78,13 @@ Plans:
   2. User can click individual series in the legend to show or hide them on the chart, with the zoom range preserved on toggle
   3. User can open a parameter selector and choose any column from the loaded CSV to add to the current view beyond the pre-built defaults
   4. After a page reload, the previously selected view and visible series are restored automatically from localStorage
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: Pre-built view tabs — view definition map (preset name to column list), tab bar UI, view switching wired to series builder
-- [ ] 04-02: Series show/hide — legend click handlers, setSeries() calls (no chart recreate), zoom preservation on toggle
-- [ ] 04-03: Custom parameter selection — column list panel showing all parsed columns, add/remove to active view
-- [ ] 04-04: localStorage persistence — serialize active view and visible series on change, restore on file load
+- [ ] 04-01-PLAN.md — Core state machine + view tabs: CSS fixes (pointer-events), VIEW_GROUPS, buildViewPresets(), setActiveView(), buildViewTabs(), tab bar UI with 6 preset tabs, Parameters... button placeholder
+- [ ] 04-02-PLAN.md — Legend click toggle: wireLegendClicks() event delegation, +1 index offset, opacity/line-through feedback, destroyChart() cleanup
+- [ ] 04-03-PLAN.md — Custom picker modal: openPickerModal() with group sections + checkboxes + binary badges, Apply/Cancel/Escape, destroyChart() cleanup
+- [ ] 04-04-PLAN.md — localStorage persistence: savePrefs()/loadPrefs()/applyRestoredPrefs(), restore after minimap wiring, fallback to DEFAULT_SERIES with toast, human verification checkpoint
 
 ## Progress
 
