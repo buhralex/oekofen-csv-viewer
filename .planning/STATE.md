@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 4 of 4 (Parameter Management) — IN PROGRESS
-Plan: 1 of 4 complete
-Status: 04-01 complete — Phase 4 state machine + view tab bar live; pointer-events fix applied; ready for 04-02 (legend click toggle)
-Last activity: 2026-02-19 — 04-01 executed: VIEW_GROUPS, buildViewPresets, setActiveView, tab bar DOM wired to createChart/destroyChart
+Plan: 2 of 4 complete
+Status: 04-02 complete — legend click delegation wired; wireLegendClicks/unwireLegendClicks + rowIndex+1 offset + applyLegendRowStyle/updateViewState; ready for 04-03 (params picker modal)
+Last activity: 2026-02-19 — 04-02 executed: wireLegendClicks event delegation on .u-legend, unwireLegendClicks cleanup, integrated into createChart/destroyChart
 
 Progress: [██████████] 75% (3/4 phases complete)
 
@@ -37,6 +37,7 @@ Progress: [██████████] 75% (3/4 phases complete)
 
 *Updated after each plan completion*
 | Phase 04-parameter-management P01 | 2 | 2 tasks | 1 files |
+| Phase 04-parameter-management P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ Recent decisions affecting current work:
 - [04-01]: buildViewPresets() queries dataModel.columns at runtime — tabs only for groups present in file; AT column appended via name-part regex for context
 - [04-01]: setSeries(i, {show}, false) third-arg false during batch tab switch suppresses hooks; updateViewState() called once after loop
 - [04-01]: #params-btn placed in HTML as display:none stub, shown/hidden with tab bar; wiring deferred to 04-03
+- [Phase 04-parameter-management]: Event delegation on .u-legend (not per-row listeners) — single handler, no risk of listener accumulation across reloads
+- [Phase 04-parameter-management]: legend._phase4ClickHandler DOM property stores handler reference — enables targeted removeEventListener in unwireLegendClicks() before chart.destroy()
 
 ### Pending Todos
 
@@ -104,5 +107,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 04-01-PLAN.md (Phase 4 state machine + view tab bar)
-Resume file: .planning/phases/04-parameter-management/04-02-PLAN.md
+Stopped at: Completed 04-02-PLAN.md (legend click toggle for series show/hide)
+Resume file: .planning/phases/04-parameter-management/04-03-PLAN.md
