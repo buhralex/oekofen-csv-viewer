@@ -1130,6 +1130,10 @@
             stroke: '#a0a0b8',
             grid:   { stroke: 'rgba(255,255,255,0.10)', width: 1 },
             ticks:  { stroke: 'rgba(255,255,255,0.10)', width: 1 },
+            // Minimum tick increment: 60 seconds (1 minute).
+            // Prevents label crowding at high zoom levels — ticks will never be
+            // placed more frequently than once per minute.
+            incrs: [60, 120, 300, 600, 900, 1800, 3600, 7200, 14400, 43200, 86400],
             values: (self, ticks) => ticks.map(t => {
               const d = new Date(t * 1000);
               return String(d.getUTCHours()).padStart(2, '0') + ':' +
@@ -1186,33 +1190,47 @@
         hooks: {
           setScale: [(u, scaleKey) => {
             if (scaleKey === 'x') {
-              let min = u.scales.x.min;
-              let max = u.scales.x.max;
-
-              // Enforce 5-minute minimum zoom window for drag zoom.
-              // (wheelZoomPlugin enforces this for scroll zoom; drag zoom bypasses it.)
-              const MIN_RANGE = 300; // seconds
-              if ((max - min) < MIN_RANGE) {
-                const mid = (min + max) / 2;
-                min = mid - MIN_RANGE / 2;
-                max = mid + MIN_RANGE / 2;
-                // Clamp to data bounds
-                const dataMin = u.data[0][0];
-                const dataMax = u.data[0][u.data[0].length - 1];
-                if (min < dataMin) { min = dataMin; max = min + MIN_RANGE; }
-                if (max > dataMax) { max = dataMax; min = max - MIN_RANGE; }
-                // Re-apply clamped range (only if changed — guard against recursion)
-                const curRange = u.scales.x.max - u.scales.x.min;
-                if (curRange < MIN_RANGE) {
-                  u.setScale('x', { min, max });
-                  return; // hook will re-fire with corrected range
-                }
-              }
-
+              const min = u.scales.x.min;
+              const max = u.scales.x.max;
               AppState.zoomRange = { min, max };
               if (AppState.onZoomChange) AppState.onZoomChange(min, max);
               updateResetButtonVisibility(u);
             }
+          }],
+
+          // Enforce 5-minute minimum zoom window for drag zoom.
+          // setScale hook fires after the scale is already applied and cannot veto it.
+          // setSelect fires when the user releases the drag selection — at that point
+          // we can read the pixel rect, convert to data values, clamp, and re-apply.
+          // Setting u.select.width = 0 prevents uPlot from applying its own setScale
+          // after this hook returns, so we are the sole setter for drag zoom.
+          setSelect: [(u) => {
+            const MIN_RANGE = 300; // 5 minutes in seconds
+            const dataMin = u.data[0][0];
+            const dataMax = u.data[0][u.data[0].length - 1];
+
+            let newMin = u.posToVal(u.select.left, 'x');
+            let newMax = u.posToVal(u.select.left + u.select.width, 'x');
+
+            // Only handle meaningful drag selections (width > 0 means user actually dragged)
+            if (u.select.width === 0) return;
+
+            // Enforce minimum range: expand from midpoint if too narrow
+            if ((newMax - newMin) < MIN_RANGE) {
+              const mid = (newMin + newMax) / 2;
+              newMin = mid - MIN_RANGE / 2;
+              newMax = mid + MIN_RANGE / 2;
+            }
+
+            // Clamp to data bounds, shifting window if needed
+            if (newMin < dataMin) { newMin = dataMin; newMax = newMin + MIN_RANGE; }
+            if (newMax > dataMax) { newMax = dataMax; newMin = newMax - MIN_RANGE; }
+            newMin = Math.max(newMin, dataMin);
+            newMax = Math.min(newMax, dataMax);
+
+            // Suppress uPlot's own setScale call after this hook (we are setting it ourselves)
+            u.select.width = 0;
+            u.setScale('x', { min: newMin, max: newMax });
           }],
         },
 
