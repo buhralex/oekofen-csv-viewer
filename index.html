@@ -826,6 +826,7 @@
   <!-- Toolbar row: reset button (Phase 3); Phase 4 adds view tabs here -->
   <div id="toolbar-row">
     <button id="reset-zoom-btn" style="display:none">Reset Zoom</button>
+    <button id="params-btn" style="display:none">Parameters...</button>
   </div>
 
   <!-- Toast notification container -->
@@ -1436,6 +1437,7 @@
     }
 
     function destroyChart() {
+      destroyViewTabs();   // Phase 4 cleanup — MUST come before chart destroy
       if (AppState.chart) {
         AppState.chart.destroy();
         AppState.chart = null;
@@ -1626,6 +1628,12 @@
         AppState.minimap.updateSelection(dataMin, dataMax);
       }
 
+      // Phase 4: Build preset map and tab bar
+      _viewPresets = buildViewPresets(AppState.dataModel);
+      _activeView = 'All';
+      buildViewTabs(_viewPresets);
+      updateTabHighlight('All');
+
       setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
     }
 
@@ -1813,6 +1821,220 @@
     //   AppState.chart.setData(newData)              — replace data for new view
     //   AppState.chartSeries                         — series opts array for reference
     //   Recreate uPlot (new uPlot) only when series COUNT changes (different preset view)
+
+    // ─── Phase 4: Parameter Management ────────────────────────────
+
+    // Group → group string mapping (matches classifyColumn() output in Phase 1)
+    const VIEW_GROUPS = {
+      'All':             null,                     // special: uses DEFAULT_SERIES
+      'Boiler':          'Boiler',
+      'Heating Circuit': 'Heating Circuit (HK1)',
+      'Hot Water':       'Hot Water (WW1)',
+      'Buffer':          'Buffer (PU1)',
+      'Pellet Unit':     'Pellet Unit (PE1)',
+    };
+
+    // Module-level Phase 4 state
+    let _viewPresets = null;   // Map<tabName, rawName[]> — built on file load
+    let _activeView  = 'All'; // current tab name or 'Custom'
+
+    // Build the six preset series lists from dataModel at runtime (not hardcoded rawNames).
+    // "All" uses DEFAULT_SERIES filtered to columns that actually exist in the file.
+    // System tabs use group membership from classifyColumn() + AT appended for context.
+    function buildViewPresets(dataModel) {
+      // Find AT rawName — the column whose name-part is exactly 'AT'
+      const atColumn = dataModel.columns.find(c => {
+        const namePart = c.rawName.match(/^(.+?)\s*(?:\[|$)/)?.[1]?.trim();
+        return namePart === 'AT';
+      });
+      const atRawName = atColumn ? atColumn.rawName : null;
+
+      const presets = new Map();
+
+      // "All" tab: DEFAULT_SERIES filtered to columns present in this file
+      presets.set('All', DEFAULT_SERIES.filter(rn =>
+        dataModel.columns.some(c => c.rawName === rn)
+      ));
+
+      // System tabs: all columns in the group + AT (deduplicated)
+      for (const [tabName, groupName] of Object.entries(VIEW_GROUPS)) {
+        if (tabName === 'All') continue;
+        const groupCols = dataModel.columns
+          .filter(c => c.group === groupName)
+          .map(c => c.rawName);
+
+        // Empty guard: do not add tab for groups absent from the file
+        if (groupCols.length === 0) continue;
+
+        const seriesList = [...groupCols];
+        if (atRawName && !seriesList.includes(atRawName)) {
+          seriesList.push(atRawName);
+        }
+        presets.set(tabName, seriesList);
+      }
+
+      return presets;
+    }
+
+    // Compare a set of visible rawNames against all presets.
+    // Returns the matching preset name, or 'Custom' if none match.
+    function matchPreset(visibleRawNames, presets) {
+      const visSet = new Set(visibleRawNames);
+      for (const [name, list] of presets.entries()) {
+        const listSet = new Set(list);
+        if (visSet.size === listSet.size && [...visSet].every(r => listSet.has(r))) {
+          return name;
+        }
+      }
+      return 'Custom';
+    }
+
+    // Read the current show state of all data series from the live uPlot instance.
+    // Returns array of rawName strings for series where show !== false.
+    function getVisibleRawNames() {
+      const u = AppState.chart;
+      if (!u) return [];
+      const visible = [];
+      for (let i = 1; i < u.series.length; i++) {
+        if (u.series[i].show !== false) {
+          visible.push(u.series[i].label);
+        }
+      }
+      return visible;
+    }
+
+    // Central state update: called after EVERY visibility change (tab switch, legend toggle, picker Apply).
+    // 1. Reads current visibility from chart.
+    // 2. Matches against presets.
+    // 3. Updates tab highlight and Custom indicator.
+    // 4. (Phase 4.4: also persists to localStorage — savePrefs() added in 04-04.)
+    function updateViewState() {
+      const visibleRawNames = getVisibleRawNames();
+      const matchedView = matchPreset(visibleRawNames, _viewPresets);
+      _activeView = matchedView;
+      updateTabHighlight(matchedView);
+      // savePrefs() inserted here by 04-04
+    }
+
+    // Update the active tab highlight and Custom indicator DOM.
+    function updateTabHighlight(viewName) {
+      document.querySelectorAll('.view-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === viewName);
+      });
+      const indicator = document.getElementById('custom-indicator');
+      if (indicator) indicator.style.display = (viewName === 'Custom') ? '' : 'none';
+    }
+
+    // Switch the chart to a named preset view. Calls setSeries() for each series —
+    // NO chart recreate, zoom is fully preserved.
+    // IMPORTANT: Batch-calls setSeries; call updateViewState() once after the loop.
+    function setActiveView(viewName) {
+      const u = AppState.chart;
+      if (!u || !_viewPresets) return;
+      const targetList = _viewPresets.get(viewName);
+      if (!targetList) return;  // unknown view name — safety guard
+
+      const targetSet = new Set(targetList);
+
+      // Update each series based on whether its rawName is in the target list.
+      // Suppress hook (third arg false) during the loop to avoid 9x updateViewState calls;
+      // call updateViewState() once after.
+      for (let i = 1; i < u.series.length; i++) {
+        const rawName = u.series[i].label;
+        const shouldShow = targetSet.has(rawName);
+        if (u.series[i].show !== shouldShow) {
+          u.setSeries(i, { show: shouldShow }, false);
+        }
+      }
+
+      // Restore legend row inline styles to match new show state
+      const legend = u.root ? u.root.querySelector('.u-legend') : null;
+      if (legend) {
+        const tbody = legend.querySelector('tbody');
+        if (tbody) {
+          const rows = Array.from(tbody.childNodes).filter(n => n.nodeType === 1);
+          rows.forEach((row, rowIdx) => {
+            const seriesIdx = rowIdx + 1;
+            if (seriesIdx < u.series.length) {
+              const isHidden = u.series[seriesIdx].show === false;
+              applyLegendRowStyle(row, isHidden);
+            }
+          });
+        }
+      }
+
+      updateViewState();
+    }
+
+    // Apply / remove inline opacity + line-through on a legend row element.
+    // Called by setActiveView() and the legend click handler (04-02).
+    function applyLegendRowStyle(row, isHidden) {
+      if (isHidden) {
+        row.style.opacity = '0.35';
+        const label = row.querySelector('.u-label');
+        if (label) label.style.textDecoration = 'line-through';
+        row.style.cursor = 'pointer';
+      } else {
+        row.style.opacity = '';
+        const label = row.querySelector('.u-label');
+        if (label) label.style.textDecoration = '';
+        row.style.cursor = 'pointer';
+      }
+    }
+
+    // Build the tab bar DOM inside #toolbar-row, to the LEFT of #reset-zoom-btn.
+    // Also shows the #params-btn.
+    // Called after createChart() when _viewPresets is populated.
+    function buildViewTabs(presets) {
+      // Clean up any previous instance (safety — destroyViewTabs should have run first)
+      destroyViewTabs();
+
+      const toolbar = document.getElementById('toolbar-row');
+      const resetBtn = document.getElementById('reset-zoom-btn');
+
+      const tabContainer = document.createElement('div');
+      tabContainer.id = 'view-tabs';
+
+      // Create one button per preset (Map preserves insertion order: All, Boiler, ...)
+      for (const [tabName] of presets.entries()) {
+        const btn = document.createElement('button');
+        btn.className = 'view-tab';
+        btn.dataset.view = tabName;
+        btn.textContent = tabName;
+        tabContainer.appendChild(btn);
+      }
+
+      // Custom indicator label (not a tab, just a status text)
+      const customIndicator = document.createElement('span');
+      customIndicator.id = 'custom-indicator';
+      customIndicator.textContent = 'Custom';
+      tabContainer.appendChild(customIndicator);
+
+      // Insert tab container BEFORE the Reset Zoom button (left side of toolbar)
+      toolbar.insertBefore(tabContainer, resetBtn);
+
+      // Event delegation — one listener on the container for all tab clicks
+      tabContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.view-tab');
+        if (!btn) return;
+        const viewName = btn.dataset.view;
+        if (viewName === _activeView) return;  // no-op if already active
+        setActiveView(viewName);
+      });
+
+      // Show the Parameters button (wired in 04-03; DOM exists from Task 2 HTML)
+      const paramsBtn = document.getElementById('params-btn');
+      if (paramsBtn) paramsBtn.style.display = '';
+    }
+
+    // Remove the #view-tabs DOM element and hide the Parameters button.
+    // Called inside destroyChart() before the uPlot instance is destroyed.
+    function destroyViewTabs() {
+      const el = document.getElementById('view-tabs');
+      if (el) el.remove();
+      const paramsBtn = document.getElementById('params-btn');
+      if (paramsBtn) paramsBtn.style.display = 'none';
+    }
 
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
     const pickBtn = document.getElementById('pick-file-btn');
