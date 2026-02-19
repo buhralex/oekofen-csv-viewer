@@ -27,6 +27,8 @@
       --border:        rgba(255, 255, 255, 0.08);
       --radius:        8px;
       --font:          system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --toolbar-height: 32px;
+      --minimap-height: 72px;
     }
 
     html, body {
@@ -206,18 +208,69 @@
       color: #81d4fa;
     }
 
+    /* ─── Toolbar Row ────────────────────────────────────────── */
+
+    #toolbar-row {
+      position: fixed;
+      top: 90px; left: 0; right: 0;
+      height: var(--toolbar-height);
+      display: none;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      z-index: 15;
+    }
+
+    #toolbar-row.visible {
+      display: flex;
+    }
+
+    #reset-zoom-btn {
+      padding: 3px 12px;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    #reset-zoom-btn:hover {
+      background: var(--accent-dim);
+    }
+
     /* ─── Chart Area ─────────────────────────────────────────── */
 
     #chart-area {
       position: fixed;
-      top: 90px;
-      left: 0; right: 0; bottom: 28px;
+      top: 122px;
+      left: 0; right: 0; bottom: 100px;
       display: none;
       overflow: hidden;
       background: var(--bg-primary);
     }
 
     #chart-area.visible {
+      display: block;
+    }
+
+    /* ─── Minimap Area ───────────────────────────────────────── */
+
+    #minimap-area {
+      position: fixed;
+      bottom: 28px; left: 0; right: 0;
+      height: var(--minimap-height);
+      display: none;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border);
+    }
+
+    #minimap-area.visible {
       display: block;
     }
 
