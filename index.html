@@ -1161,8 +1161,29 @@
         hooks: {
           setScale: [(u, scaleKey) => {
             if (scaleKey === 'x') {
-              const min = u.scales.x.min;
-              const max = u.scales.x.max;
+              let min = u.scales.x.min;
+              let max = u.scales.x.max;
+
+              // Enforce 5-minute minimum zoom window for drag zoom.
+              // (wheelZoomPlugin enforces this for scroll zoom; drag zoom bypasses it.)
+              const MIN_RANGE = 300; // seconds
+              if ((max - min) < MIN_RANGE) {
+                const mid = (min + max) / 2;
+                min = mid - MIN_RANGE / 2;
+                max = mid + MIN_RANGE / 2;
+                // Clamp to data bounds
+                const dataMin = u.data[0][0];
+                const dataMax = u.data[0][u.data[0].length - 1];
+                if (min < dataMin) { min = dataMin; max = min + MIN_RANGE; }
+                if (max > dataMax) { max = dataMax; min = max - MIN_RANGE; }
+                // Re-apply clamped range (only if changed — guard against recursion)
+                const curRange = u.scales.x.max - u.scales.x.min;
+                if (curRange < MIN_RANGE) {
+                  u.setScale('x', { min, max });
+                  return; // hook will re-fire with corrected range
+                }
+              }
+
               AppState.zoomRange = { min, max };
               if (AppState.onZoomChange) AppState.onZoomChange(min, max);
               updateResetButtonVisibility(u);
