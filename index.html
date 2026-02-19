@@ -1182,15 +1182,24 @@
       AppState.chart = new uPlot(opts, data, container);
       AppState.chartSeries = series;
 
-      // Wire reset button
-      document.getElementById('reset-zoom-btn').addEventListener('click', () => {
-        if (AppState.chart) AppState.chart.setScale('x', { min: null, max: null });
-      });
+      // Wire reset button — use explicit data extents rather than null/null
+      // because null/null may not reliably trigger the setScale hook in all uPlot builds.
+      const _resetBtn = document.getElementById('reset-zoom-btn');
+      const _resetHandler = () => {
+        if (!AppState.chart) return;
+        const d = AppState.chart.data[0];
+        AppState.chart.setScale('x', { min: d[0], max: d[d.length - 1] });
+      };
+      // Remove any previously attached listener (prevents accumulation across file reloads)
+      _resetBtn.removeEventListener('click', _resetBtn._resetHandler);
+      _resetBtn._resetHandler = _resetHandler;
+      _resetBtn.addEventListener('click', _resetHandler);
 
-      // Wire double-click reset (uPlot v1.6.x has native dblclick reset on .over —
-      // this listener is an explicit backup and ensures consistent behavior)
+      // Wire double-click reset — same explicit data extents as the reset button
       AppState.chart.over.addEventListener('dblclick', () => {
-        AppState.chart.setScale('x', { min: null, max: null });
+        if (!AppState.chart) return;
+        const d = AppState.chart.data[0];
+        AppState.chart.setScale('x', { min: d[0], max: d[d.length - 1] });
       });
 
       // Initialize reset button visibility (hidden at full range on load)
