@@ -279,6 +279,14 @@
       background: var(--bg-primary) !important;
     }
 
+    /* Minimap zoom selection highlight — uPlot default is a dim grey;
+       override with a bright accent-blue so the zoom window is clearly visible
+       on the dark background (Check 18). */
+    #minimap-area .u-select {
+      background: rgba(79, 195, 247, 0.25) !important;
+      border: 1px solid rgba(79, 195, 247, 0.7) !important;
+    }
+
     /* Floating legend: top-left overlay matching the OekoFEN PNG style */
     .u-legend {
       position: absolute !important;
