@@ -490,6 +490,7 @@
       // Phase 3 hook points (stubs — Phase 3 populates these):
       onZoomChange:  null,   // function(minTs, maxTs) — minimap subscribes here
       zoomRange:     null,   // { min, max } in Unix seconds — set by Phase 3 zoom plugin
+      minimap:       null,   // { instance: uPlot, updateSelection: fn } — set by createMinimap()
     };
     window.AppState = AppState; // expose for debugging
 
@@ -947,6 +948,104 @@
       };
     }
 
+    // ─── Minimap Overview (NAVG-05) ───────────────────────────────
+    // Secondary uPlot instance at 72px height showing full day with zoom region highlighted.
+    // Bidirectional sync: main chart's setScale hook calls minimap.updateSelection(),
+    // minimap's setSelect hook calls AppState.chart.setScale() — infinite loop prevented
+    // by passing false as second arg to minimap.setSelect().
+    function createMinimap(data, series) {
+      const container = document.getElementById('minimap-area');
+      if (!container) return null;
+
+      // Simplified series for minimap: reuse same series opts but with thinner strokes
+      // to reduce visual noise in 72px height. Only show a subset of key series.
+      // Per research: showing all 9 series at full width produces an indistinct mass.
+      // Solution: use the same series array but reduce width to 0.5 for continuous, 0 for binary.
+      const minimapSeries = series.map(function(s, i) {
+        if (i === 0) return s;   // X-axis placeholder — unchanged
+        if (s.scale === 'binary') {
+          // Binary (BR burner state): keep as filled band but thinner
+          return Object.assign({}, s, { width: 0 });
+        }
+        // Continuous: thin stroke, no fill
+        return Object.assign({}, s, { width: 0.5 });
+      });
+
+      const minimapOpts = {
+        width:  container.clientWidth,
+        height: container.clientHeight,   // 72px set by CSS --minimap-height
+
+        series: minimapSeries,
+
+        legend: { show: false },           // no legend in minimap
+
+        axes: [
+          { show: false },                 // hide X axis labels (too small at 72px)
+          { show: false },                 // hide left Y axis
+          { show: false },                 // hide right binary axis
+        ],
+
+        cursor: {
+          show:   false,                   // no crosshair in minimap
+          drag: {
+            setScale: false,               // minimap drag does NOT auto-zoom minimap's own scale
+            x: true,
+            y: false,
+          },
+        },
+
+        select: {
+          show: true,                      // show the highlighted zoom region overlay
+        },
+
+        scales: {
+          x:      {},
+          y:      { auto: true },
+          binary: { range: [0, 1] },
+        },
+
+        padding: [2, 0, 2, 0],
+
+        hooks: {
+          setSelect: [function(uMinimap) {
+            // Fires when user drags in minimap to select a new range
+            // Convert pixel selection to timestamps and zoom main chart
+            const newMin = uMinimap.posToVal(uMinimap.select.left, 'x');
+            const newMax = uMinimap.posToVal(uMinimap.select.left + uMinimap.select.width, 'x');
+            if (AppState.chart && newMin < newMax) {
+              AppState.chart.setScale('x', { min: newMin, max: newMax });
+            }
+          }],
+        },
+      };
+
+      const uMinimap = new uPlot(minimapOpts, data, container);
+
+      // updateSelection: called by AppState.onZoomChange when main chart zoom changes.
+      // Draws the highlight overlay showing the current zoom window on the minimap.
+      // CRITICAL: pass false as second arg to setSelect to prevent minimap's setSelect
+      // hook from firing (which would call AppState.chart.setScale again — infinite loop).
+      function updateSelection(minTs, maxTs) {
+        if (!uMinimap) return;
+
+        // Clamp to minimap's own x range to avoid setSelect with out-of-bounds values
+        const dataMin = uMinimap.data[0][0];
+        const dataMax = uMinimap.data[0][uMinimap.data[0].length - 1];
+        const clampedMin = Math.max(minTs, dataMin);
+        const clampedMax = Math.min(maxTs, dataMax);
+
+        const left   = Math.round(uMinimap.valToPos(clampedMin, 'x'));
+        const right  = Math.round(uMinimap.valToPos(clampedMax, 'x'));
+        const width  = Math.max(0, right - left);
+        // height in CSS pixels (bbox.height is in physical pixels / devicePixelRatio)
+        const height = uMinimap.bbox.height / devicePixelRatio;
+
+        uMinimap.setSelect({ left: left, width: width, height: height, top: 0 }, false);
+      }
+
+      return { instance: uMinimap, updateSelection: updateSelection };
+    }
+
     // ─── Chart Lifecycle (Phase 3) ────────────────────────────────
     function updateResetButtonVisibility(u) {
       const btn = document.getElementById('reset-zoom-btn');
@@ -968,6 +1067,11 @@
       document.getElementById('chart-area').innerHTML = '';
       AppState.zoomRange = null;
       AppState.onZoomChange = null;
+      if (AppState.minimap) {
+        AppState.minimap.instance.destroy();
+        AppState.minimap = null;
+      }
+      document.getElementById('minimap-area').innerHTML = '';
     }
 
     function createChart() {
@@ -1091,6 +1195,22 @@
 
       // Initialize reset button visibility (hidden at full range on load)
       updateResetButtonVisibility(AppState.chart);
+
+      // Create and wire minimap (NAVG-05)
+      const { data: minimapData, series: minimapSeries } = buildChartData(AppState.dataModel, DEFAULT_SERIES);
+      AppState.minimap = createMinimap(minimapData, minimapSeries);
+
+      // Wire AppState.onZoomChange to minimap.updateSelection
+      // This stub was set up in Phase 2 and called by the setScale hook added in 03-01.
+      if (AppState.minimap) {
+        AppState.onZoomChange = function(min, max) {
+          AppState.minimap.updateSelection(min, max);
+        };
+        // Initialize minimap selection to full range (no zoom on first load)
+        const dataMin = AppState.chart.data[0][0];
+        const dataMax = AppState.chart.data[0][AppState.chart.data[0].length - 1];
+        AppState.minimap.updateSelection(dataMin, dataMax);
+      }
 
       setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
     }
@@ -1227,11 +1347,18 @@
       if (!AppState.chart) return;
       clearTimeout(_resizeTimer);
       _resizeTimer = setTimeout(() => {
-        const container = document.getElementById('chart-area');
+        const chartContainer = document.getElementById('chart-area');
         AppState.chart.setSize({
-          width:  container.clientWidth,
-          height: container.clientHeight,
+          width:  chartContainer.clientWidth,
+          height: chartContainer.clientHeight,
         });
+        if (AppState.minimap) {
+          const minimapContainer = document.getElementById('minimap-area');
+          AppState.minimap.instance.setSize({
+            width:  minimapContainer.clientWidth,
+            height: minimapContainer.clientHeight,
+          });
+        }
       }, 100);
     }
 
