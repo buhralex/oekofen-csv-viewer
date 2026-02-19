@@ -30,9 +30,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Navigation
 
-- [ ] **NAVG-01**: User can zoom into a time range by click-dragging on the chart
+- [x] **NAVG-01**: User can zoom into a time range by click-dragging on the chart
 - [ ] **NAVG-02**: User can zoom in/out with the scroll wheel, centered on cursor position
-- [ ] **NAVG-03**: User can reset zoom to the full day view
+- [x] **NAVG-03**: User can reset zoom to the full day view
 - [ ] **NAVG-04**: User can see a cursor crosshair with tooltip showing values of all visible series at the cursor time position
 - [ ] **NAVG-05**: User can see an overview/minimap showing the full day with the current zoom range highlighted
 
@@ -100,9 +100,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHRT-02 | Phase 2 | Complete (02-01) |
 | CHRT-03 | Phase 2 | Complete (02-02) |
 | CHRT-04 | Phase 2 | Complete (02-02) |
-| NAVG-01 | Phase 3 | Pending |
+| NAVG-01 | Phase 3 | Complete (03-01) |
 | NAVG-02 | Phase 3 | Pending |
-| NAVG-03 | Phase 3 | Pending |
+| NAVG-03 | Phase 3 | Complete (03-01) |
 | NAVG-04 | Phase 3 | Pending |
 | NAVG-05 | Phase 3 | Pending |
 | PARM-01 | Phase 4 | Pending |
@@ -117,4 +117,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-18 after 02-02 execution — CHRT-03 and CHRT-04 complete: debounced resize handler, benchmarkSeriesToggle() diagnostic, human-verified all four CHRT requirements*
+*Last updated: 2026-02-19 after 03-01 execution — NAVG-01 and NAVG-03 complete: drag-to-zoom via uPlot cursor.drag.setScale, reset button and double-click reset wired to AppState*

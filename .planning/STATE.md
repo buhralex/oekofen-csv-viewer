@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 2 - Chart Rendering
+**Current focus:** Phase 3 - Navigation and Interaction
 
 ## Current Position
 
-Phase: 2 of 4 (Chart Rendering) — COMPLETE
-Plan: 2 of 2 complete (02-01 complete, 02-02 complete)
-Status: Phase 2 fully complete — all four CHRT requirements human-verified; Phase 3 planning is next
-Last activity: 2026-02-18 — 02-02 complete: resize handler, benchmarkSeriesToggle(), human-verified (approved)
+Phase: 3 of 4 (Navigation and Interaction) — IN PROGRESS
+Plan: 1 of 4 complete (03-01 complete)
+Status: Phase 3 started — drag-to-zoom, reset button, CSS layout foundation complete; plans 03-02 through 03-04 remain
+Last activity: 2026-02-19 — 03-01 complete: CSS layout restructure, toolbar/minimap placeholder HTML, drag-to-zoom, reset button wired to AppState
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: ~24 min
-- Total execution time: ~1 hour
+- Total plans completed: 6
+- Average duration: ~20 min
+- Total execution time: ~1h 2m
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [██████░░░░] 60%
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | ~80 min | ~27 min |
 | 2. Chart Rendering | 2/3 | ~33 min | ~16 min |
+| 3. Navigation and Interaction | 1/4 | ~2 min | ~2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (15 min), 01-02 (~30 min), 01-03 (~35 min), 02-01 (~25 min), 02-02 (~8 min)
+- Last 5 plans: 01-03 (~35 min), 02-01 (~25 min), 02-02 (~8 min), 03-01 (~2 min)
 - Trend: Steady
 
 *Updated after each plan completion*
@@ -66,6 +67,10 @@ Recent decisions affecting current work:
 - [02-01]: X-axis formatted via getUTCHours/getUTCMinutes — timestamps are UTC, local timezone must not shift display
 - [02-02]: Resize debounced at 100ms — plan's 200ms redraw budget leaves margin for uPlot render after debounce fires
 - [02-02]: benchmarkSeriesToggle() runs 20 toggle iterations — stable average without prolonged visible flicker; restores series[1] to show:true at end
+- [03-01]: Reset button uses inline style display toggle (not CSS class) — avoids conflicts with toolbar-row flex layout
+- [03-01]: destroyChart() nulls AppState.zoomRange and AppState.onZoomChange — prevents stale minimap callbacks after file reload
+- [03-01]: cursor.drag.dist:3 minimum pixel distance before zoom activates — prevents accidental zoom from mis-clicks
+- [03-01]: Double-click wired explicitly on u.over as backup — ensures consistent cross-browser behavior alongside uPlot native dblclick reset
 
 ### Pending Todos
 
@@ -80,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-18
-Stopped at: Phase 3 context gathered — ready for /gsd:plan-phase 3
-Resume file: .planning/phases/03-navigation-and-interaction/03-CONTEXT.md
+Last session: 2026-02-19
+Stopped at: Completed 03-01-PLAN.md — drag-to-zoom and Phase 3 layout foundation done
+Resume file: .planning/phases/03-navigation-and-interaction/03-01-SUMMARY.md
