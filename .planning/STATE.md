@@ -78,6 +78,8 @@ Recent decisions affecting current work:
 - [03-03]: OFFSET=12px gap between cursor line and tooltip edge; tooltip.offsetWidth || 180 fallback for first-render width
 - [03-03]: Left/right flip: (left + ttW + OFFSET) > chartW triggers tooltip to render left of cursor line
 - [03-03]: s.stroke resolved via typeof check — handles uPlot gradient stroke functions; no forced rounding on raw values (per CONTEXT.md)
+- [Phase 03]: setSelect(opts, false) is CRITICAL for minimap: second argument false prevents minimap setSelect hook re-firing and infinite zoom loop
+- [Phase 03]: Minimap series cloned with Object.assign(), width:0.5 for continuous / width:0 for binary — avoids visual noise at 72px
 
 ### Pending Todos
 
