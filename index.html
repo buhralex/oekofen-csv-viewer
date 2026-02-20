@@ -1103,15 +1103,15 @@
     // ─── Chart Series Builder (Phase 2) ───────────────────────────
 
     const DEFAULT_SERIES = [
-      'AT [\u00b0C]',           // Outside air temperature (Aussentemperatur)
-      'KT Ist[\u00b0C]',        // Boiler actual temperature (Kesseltemperatur)
-      'HK1 VL Ist[\u00b0C]',    // HK1 flow temperature actual
-      'HK1 RL Ist[\u00b0C]',    // HK1 return temperature actual
-      'PU1 oben[\u00b0C]',      // Buffer upper temperature
-      'PU1 unten[\u00b0C]',     // Buffer lower temperature
-      'PE1 Kessel[\u00b0C]',    // PE1 boiler temperature
-      'PE1 HK [\u00b0C]',       // PE1 heating circuit temp or power
-      'BR',                      // Burner running (binary 0/1)
+      'AT [\u00b0C]',            // Outside air temperature (Aussentemperatur)
+      'KT Ist [\u00b0C]',        // Boiler actual temperature (Kesseltemperatur)
+      'HK1 VL Ist[\u00b0C]',     // HK1 flow temperature actual
+      'HK1 RT Ist[\u00b0C]',     // HK1 return temperature actual (RT = Rücklauftemperatur)
+      'PU1 TPO Ist[\u00b0C]',    // Buffer upper temperature (TPO = top sensor)
+      'PU1 TPM Ist[\u00b0C]',    // Buffer middle temperature (TPM = middle sensor)
+      'PE1 KT[\u00b0C]',          // PE1 boiler temperature (KT = Kesseltemperatur)
+      'PE1 FRT Ist[\u00b0C]',     // PE1 firebox temperature actual (FRT = Feuerraumtemperatur)
+      'BR',                       // Burner running (binary 0/1)
     ];
 
     const GROUP_COLORS = {
@@ -1123,10 +1123,10 @@
     };
 
     const SERIES_COLOR_OVERRIDES = {
-      'AT [\u00b0C]':        '#80deea',  // teal — stands out as "outside air"
-      'KT Ist[\u00b0C]':     '#ef5350',  // red — boiler temp is most critical
-      'HK1 RL Ist[\u00b0C]': '#ff7043',  // darker orange to separate from VL
-      'PU1 unten[\u00b0C]':  '#4caf50',  // darker green to separate from oben
+      'AT [\u00b0C]':         '#80deea',  // teal — stands out as "outside air"
+      'KT Ist [\u00b0C]':     '#ef5350',  // red — boiler temp is most critical
+      'HK1 RT Ist[\u00b0C]':  '#ff7043',  // darker orange to separate from VL
+      'PU1 TPM Ist[\u00b0C]': '#4caf50',  // darker green to separate from upper sensor
     };
 
     function buildChartData(dataModel, seriesNames) {
@@ -2071,6 +2071,10 @@
       }
 
       function onLegendClick(e) {
+        // Capture phase — stop event before it reaches uPlot's built-in <th> toggle handler.
+        // Without this, uPlot and our handler both fire → double-toggle → no visible change.
+        e.stopPropagation();
+
         const u = AppState.chart;
         if (!u) return;
 
@@ -2100,7 +2104,9 @@
         updateViewState();
       }
 
-      legend.addEventListener('click', onLegendClick);
+      // Capture phase (true) ensures our handler fires before uPlot's bubble-phase
+      // handler on the <th> element, allowing stopPropagation() to prevent double-toggle.
+      legend.addEventListener('click', onLegendClick, true);
       // Store handler reference on the legend element for cleanup in unwireLegendClicks()
       legend._phase4ClickHandler = onLegendClick;
     }
@@ -2112,7 +2118,7 @@
       if (!u) return;
       const legend = u.root ? u.root.querySelector('.u-legend') : null;
       if (legend && legend._phase4ClickHandler) {
-        legend.removeEventListener('click', legend._phase4ClickHandler);
+        legend.removeEventListener('click', legend._phase4ClickHandler, true);
         legend._phase4ClickHandler = null;
       }
     }
