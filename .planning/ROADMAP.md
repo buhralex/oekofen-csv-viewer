@@ -70,5 +70,5 @@ Plans:
 | 2. Chart Rendering | v1.0 | 2/2 | Complete | 2026-02-18 |
 | 3. Navigation and Interaction | v1.0 | 4/4 | Complete | 2026-02-19 |
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
-| 5. Settings and Pipeline Foundation | v1.1 | 0/3 | Not started | - |
+| 5. Settings and Pipeline Foundation | 1/3 | In Progress|  | - |
 | 6. Download UI and Error Handling | v1.1 | 0/3 | Not started | - |

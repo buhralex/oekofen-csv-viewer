@@ -7,14 +7,14 @@
 
 ### Onboarding (ONBD)
 
-- [ ] **ONBD-01**: On first load (no settings configured), the app presents a prompt inviting the user to set up a heater connection, alongside the existing drop zone
-- [ ] **ONBD-02**: Choosing "Connect to heater" from the prompt opens the settings panel
-- [ ] **ONBD-03**: The onboarding prompt is not shown again once settings are saved or the prompt is dismissed
+- [x] **ONBD-01**: On first load (no settings configured), the app presents a prompt inviting the user to set up a heater connection, alongside the existing drop zone
+- [x] **ONBD-02**: Choosing "Connect to heater" from the prompt opens the settings panel
+- [x] **ONBD-03**: The onboarding prompt is not shown again once settings are saved or the prompt is dismissed
 
 ### Settings (SET)
 
 - [ ] **SET-01**: User can open a settings panel to enter heater connection details (IP Address, Port, API Password)
-- [ ] **SET-02**: Connection settings are persisted to localStorage and restored on page load
+- [x] **SET-02**: Connection settings are persisted to localStorage and restored on page load
 - [ ] **SET-03**: Settings panel is accessible from a gear icon in the app header at all times
 
 ### Connection (CONN)
@@ -54,11 +54,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ONBD-01 | Phase 5 | Pending |
-| ONBD-02 | Phase 5 | Pending |
-| ONBD-03 | Phase 5 | Pending |
+| ONBD-01 | Phase 5 | Complete |
+| ONBD-02 | Phase 5 | Complete |
+| ONBD-03 | Phase 5 | Complete |
 | SET-01 | Phase 5 | Pending |
-| SET-02 | Phase 5 | Pending |
+| SET-02 | Phase 5 | Complete |
 | SET-03 | Phase 5 | Pending |
 | CONN-04 | Phase 5 | Pending |
 | CONN-05 | Phase 5 | Pending |

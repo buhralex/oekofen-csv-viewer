@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 5 of 6 (Settings and Pipeline Foundation)
-Plan: — (not started)
-Status: Ready to plan
-Last activity: 2026-02-21 — v1.1 roadmap created, Phase 5 ready for planning
+Plan: 1 of 4 complete (ready for 05-02)
+Status: In progress
+Last activity: 2026-02-21 — Plan 05-01 complete
 
-Progress: [░░░░░░░░░░] 0% (0/6 plans complete)
+Progress: [█░░░░░░░░░] 17% (1/6 plans complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,11 @@ Progress: [░░░░░░░░░░] 0% (0/6 plans complete)
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-*v1.1 metrics will populate as plans complete*
+**v1.1 Plans Completed: 1/6**
+
+| Plan | Name | Duration | Tasks | Status |
+|------|------|----------|-------|--------|
+| 05-01 | Settings Data Layer + Onboarding Prompt | 2min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -47,6 +51,8 @@ Key architectural decisions relevant to v1.1:
 - **CORS from file:// is a hard block** — must serve from `http://localhost`; `mode: 'no-cors'` is not a mitigation; document `python -m http.server` in the UI
 - **Settings modal follows picker modal pattern** — create/destroy in JS on demand (lines 2326–2513 of index.html are the reference)
 - **Rate limit: 2500ms, timestamp guard** — write `_lastFetchAt` only when fetch actually starts; never auto-retry
+- **saveSettings() auto-calls dismissOnboarding()** — prompt never reappears after settings are persisted (05-01)
+- **openSettingsModal() guarded by typeof check** — onboarding connect button safe until 05-02 adds the function
 
 ### Pending Todos
 
@@ -60,5 +66,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: v1.1 roadmap created — Phase 5 (Settings and Pipeline Foundation) ready to plan
+Stopped at: Completed 05-01-PLAN.md (Settings Data Layer + Onboarding Prompt)
 Resume file: none
