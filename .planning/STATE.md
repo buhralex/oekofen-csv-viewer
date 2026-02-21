@@ -2,106 +2,35 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-17)
+See: .planning/PROJECT.md (updated 2026-02-21 after v1.0 milestone)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** COMPLETE — all 4 phases delivered and verified
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 4 of 4 (Parameter Management) — COMPLETE
-Plan: 4 of 4 complete
-Status: 04-04 complete — localStorage persistence, all-columns chart build, two-state legend hiding, tooltip clamp, 29-check verification approved
-Last activity: 2026-02-21 — Phase 4 complete; all PARM requirements verified
+Milestone v1.0 MVP — SHIPPED 2026-02-21
+All 4 phases complete. 13/13 plans executed.
 
-Progress: [██████████] 100% (4/4 phases complete)
+## Milestone v1.0 Summary
 
-## Performance Metrics
-
-**Velocity:**
-- Total plans completed: 10
-- Average duration: ~15 min
-- Total execution time: ~1h 38m
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1. Foundation | 3/3 | ~80 min | ~27 min |
-| 2. Chart Rendering | 2/2 | ~33 min | ~16 min |
-| 3. Navigation and Interaction | 4/4 | ~40 min | ~10 min |
-
-**Recent Trend:**
-- Last 5 plans: 03-01 (~2 min), 03-02 (~1 min), 03-03 (~1 min), 03-04 (~36 min with verification)
-- Trend: Phase 3 avg inflated by 03-04 human checkpoint; implementation itself was fast
-
-*Updated after each plan completion*
-| Phase 04-parameter-management P01 | 2 | 2 tasks | 1 files |
-| Phase 04-parameter-management P02 | 1 | 1 tasks | 1 files |
-| Phase 04-parameter-management P03 | 1 | 1 tasks | 1 files |
-| Phase 04-parameter-management P04 | ~90 min | 2 tasks + 5 bug fixes | 1 files |
+- Phases 1-4 shipped (4 phases, 13 plans, 72 commits)
+- Deliverable: `index.html` — 2,542 lines, self-contained browser app
+- All 22 v1 requirements delivered
+- See: `.planning/MILESTONES.md` for full details
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Full decision log archived in PROJECT.md Key Decisions table.
 
-- [Init]: Web-based client-side only approach confirmed; uPlot 1.6.32 + PapaParse 5.5.3 selected as the stack
-- [Init]: One-way data pipeline architecture mandated: File drop → Parse → Normalize → Data Model → View → Chart
-- [Init]: Phase 1 must be verified against a real OekoFEN CSV file before Phase 2 begins — normalizer is highest-risk component
-- [01-01]: Dark navy theme (#1a1a2e, #4fc3f7 accent) chosen for chart readability
-- [01-01]: CSS custom properties established as theming system — all plans extend :root vars
-- [01-01]: UI transition functions showDropZone() / showAppView(filename) defined as the state transition pair for Plans 02+
-- [01-01]: showToast() / setStatus() established as feedback primitives for all subsequent plans
-- [01-02]: Window-level dragover+drop guard must attach to window (not drop zone) — only then does LOAD-03 (outside-zone drops) work
-- [01-02]: dragDepth counter pattern used to prevent flicker — increment on dragenter, decrement on dragleave, remove CSS class only at zero
-- [01-02]: handleFileDrop() is the single validation entry point for both drag and file picker paths
-- [01-02]: onFileAccepted(file) is the handoff boundary — Plan 03 replaces the stub body with the parse pipeline
-- [01-03]: TextDecoder('windows-1252') required — real OekoFEN file is ISO-8859-1 with no BOM; UTF-8 produces mojibake
-- [01-03]: IGNORED_COLUMNS Set(['Fehler1','Fehler2','Fehler3','Zubrp1 Pumpe']) — excluded at parse time, 64 data columns result from 70 raw minus 2 timestamp minus 4 ignored
-- [01-03]: BINARY_COLUMNS Set(['BR','Sperrzeit']) — type:'discrete' signals Phase 2 to use step chart rendering
-- [01-03]: PE1 group unified as 'Pellet Unit (PE1)', not split — per CONTEXT.md locked decision
-- [01-03]: AppState.dataModel shape locked: { isOekoFEN, timestamps[], columns[], parseIssues, rowCount } — Phase 2 consumes this directly
-- [02-01]: uPlot.paths.stepped({ align: 1 }) used for BR binary series — step interpolation not linear, renders as filled 0/1 band
-- [02-01]: Dual-axis architecture set at construction time: left 'y' (auto-scale), right 'binary' (fixed 0-1) — cannot add axes after uPlot init
-- [02-01]: cursor.show:false and select.show:false at construction — Phase 3 owns all interactive overlay behavior
-- [02-01]: AppState.onZoomChange and AppState.zoomRange stubs initialized as null — Phase 3 assigns these
-- [02-01]: X-axis formatted via getUTCHours/getUTCMinutes — timestamps are UTC, local timezone must not shift display
-- [02-02]: Resize debounced at 100ms — plan's 200ms redraw budget leaves margin for uPlot render after debounce fires
-- [02-02]: benchmarkSeriesToggle() runs 20 toggle iterations — stable average without prolonged visible flicker; restores series[1] to show:true at end
-- [03-01]: Reset button uses inline style display toggle (not CSS class) — avoids conflicts with toolbar-row flex layout
-- [03-01]: destroyChart() nulls AppState.zoomRange and AppState.onZoomChange — prevents stale minimap callbacks after file reload
-- [03-01]: cursor.drag.dist:3 minimum pixel distance before zoom activates — prevents accidental zoom from mis-clicks
-- [03-01]: Double-click wired explicitly on u.over as backup — ensures consistent cross-browser behavior alongside uPlot native dblclick reset
-- [03-02]: factor:0.75 per scroll tick — 25% range change per zoom step, matches uPlot demo pattern
-- [03-02]: MIN_RANGE=300s enforces 5-minute minimum visible window for scroll zoom
-- [03-02]: Range-shift clamping at data edges: shifts entire window to preserve requested range width (not truncation)
-- [03-03]: tooltipPlugin() uses init hook to append #chart-tooltip div to u.over and setCursor hook for live value display
-- [03-03]: OFFSET=12px gap between cursor line and tooltip edge; tooltip.offsetWidth || 180 fallback for first-render width
-- [03-03]: Left/right flip: (left + ttW + OFFSET) > chartW triggers tooltip to render left of cursor line
-- [03-03]: s.stroke resolved via typeof check — handles uPlot gradient stroke functions; no forced rounding on raw values (per CONTEXT.md)
-- [Phase 03]: setSelect(opts, false) is CRITICAL for minimap: second argument false prevents minimap setSelect hook re-firing and infinite zoom loop
-- [Phase 03]: Minimap series cloned with Object.assign(), width:0.5 for continuous / width:0 for binary — avoids visual noise at 72px
-- [03-04]: cursor.show:true + cursor.drag.setScale:false in minimap — cursor.show:false silently disables drag in uPlot
-- [03-04]: Reset zoom requires explicit {min: dataMin, max: dataMax} — {min:null,max:null} not recognized by uPlot 1.6.32
-- [03-04]: Drag-zoom 300s floor via pre-clamped values before setScale — hook-based approaches failed due to uPlot re-entrancy
-- [03-04]: display:block required for tooltip show — display:'' inherits CSS display:none from stylesheet
-- [04-01]: pointer-events:auto on .u-legend — tooltip reads u.series[i].show, does not depend on legend being non-interactive; required for 04-02 legend click events
-- [04-01]: buildViewPresets() queries dataModel.columns at runtime — tabs only for groups present in file; AT column appended via name-part regex for context
-- [04-01]: setSeries(i, {show}, false) third-arg false during batch tab switch suppresses hooks; updateViewState() called once after loop
-- [04-01]: #params-btn placed in HTML as display:none stub, shown/hidden with tab bar; wiring deferred to 04-03
-- [Phase 04-parameter-management]: Event delegation on .u-legend (not per-row listeners) — single handler, no risk of listener accumulation across reloads
-- [Phase 04-parameter-management]: legend._phase4ClickHandler DOM property stores handler reference — enables targeted removeEventListener in unwireLegendClicks() before chart.destroy()
-- [Phase 04-parameter-management]: closePickerModal() is third cleanup in destroyChart() — before chart.destroy(), safe when chart is null
-- [Phase 04-parameter-management]: Escape listener self-removes via onEscape named function — no lingering global keydown listener after modal close
-- [Phase 04-parameter-management]: _paramsHandler DOM property on #params-btn — removes previous listener before re-attaching on file reload
-- [04-04]: Chart built with ALL dataModel columns (DEFAULT_SERIES first, show:true; rest show:false) — picker shows/hides any column without chart recreate
-- [04-04]: Two-state legend hiding: applyLegendRowStyle uses faded (opacity:0.35) for in-view hidden; setActiveView/applyRestoredPrefs use display:none directly for out-of-view
-- [04-04]: applyRestoredPrefs computes matchedView before legend loop; viewSet = preset list (named) or validSet (Custom) for in/out distinction
-- [04-04]: Tooltip vertical clamp: Math.min(Math.max(0, top-20), Math.max(0, chartH-ttH)) — prevents minimap overlap
-- [04-04]: Legend click double-toggle fixed: capture phase (true) + e.stopPropagation() intercepts before uPlot built-in th handler; removeEventListener also passes true
+Key architectural decisions that remain relevant:
+- **Single HTML file** — no build step; deploy by copying one file
+- **uPlot 1.6.32** (vendored) — canvas rendering, dual-axis (left: continuous y, right: binary 0-1)
+- **All columns pre-loaded at chart creation** — picker shows/hides without chart recreate
+- **Event delegation on .u-legend** — single listener, no accumulation risk across reloads
+- **setSelect(opts, false)** — second arg false is CRITICAL to prevent minimap ↔ main chart zoom loop
 
 ### Pending Todos
 
@@ -109,13 +38,10 @@ None.
 
 ### Blockers/Concerns
 
-- [Phase 1 RESOLVED]: CSV schema validated — ISO-8859-1, semicolon delimiter, trailing semicolons, trailing spaces in column names. Plans reflect actual file format.
-- [Phase 1 RESOLVED]: Column group rules hardcoded from real file inspection — HK1, WW1, PU1, PE1 prefix-based; Boiler explicit list.
-- [Advisory]: PARS-03 implemented via TextDecoder('windows-1252') not BOM stripping — real file has no BOM. Excel-generated UTF-8 BOM files not handled (future concern if needed).
-- [Advisory 02-01 RESOLVED]: DEFAULT_SERIES names corrected from Phase 2 placeholders to real CSV names (verified against touch_20260216.csv). Chart now built with all 64 columns; non-DEFAULT initialized hidden. Picker handles any column.
+None active.
 
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Phase 4 complete — all 29 verification checks approved. Project feature-complete.
+Stopped at: v1.0 milestone complete — archived and tagged.
 Resume file: none
