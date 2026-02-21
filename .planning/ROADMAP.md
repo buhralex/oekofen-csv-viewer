@@ -41,8 +41,8 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Settings persistence (_settings, SETTINGS_KEY, loadSettings, saveSettings) and onboarding prompt
-- [ ] 05-02-PLAN.md — Settings modal UI (openSettingsModal, closeSettingsModal) and gear icon entry points in drop zone and header
+- [x] 05-01-PLAN.md — Settings persistence (_settings, SETTINGS_KEY, loadSettings, saveSettings) and onboarding prompt
+- [x] 05-02-PLAN.md — Settings modal UI (openSettingsModal, closeSettingsModal) and gear icon entry points in drop zone and header
 - [ ] 05-03-PLAN.md — Pipeline extraction (onCsvStringAccepted refactor) and regression verification checkpoint
 
 ### Phase 6: Download UI and Error Handling
@@ -70,5 +70,5 @@ Plans:
 | 2. Chart Rendering | v1.0 | 2/2 | Complete | 2026-02-18 |
 | 3. Navigation and Interaction | v1.0 | 4/4 | Complete | 2026-02-19 |
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
-| 5. Settings and Pipeline Foundation | 1/3 | In Progress|  | - |
+| 5. Settings and Pipeline Foundation | v1.1 | 2/3 | In Progress | - |
 | 6. Download UI and Error Handling | v1.1 | 0/3 | Not started | - |

@@ -13,9 +13,9 @@
 
 ### Settings (SET)
 
-- [ ] **SET-01**: User can open a settings panel to enter heater connection details (IP Address, Port, API Password)
+- [x] **SET-01**: User can open a settings panel to enter heater connection details (IP Address, Port, API Password)
 - [x] **SET-02**: Connection settings are persisted to localStorage and restored on page load
-- [ ] **SET-03**: Settings panel is accessible from a gear icon in the app header at all times
+- [x] **SET-03**: Settings panel is accessible from a gear icon in the app header at all times
 
 ### Connection (CONN)
 
@@ -57,9 +57,9 @@
 | ONBD-01 | Phase 5 | Complete |
 | ONBD-02 | Phase 5 | Complete |
 | ONBD-03 | Phase 5 | Complete |
-| SET-01 | Phase 5 | Pending |
+| SET-01 | Phase 5 | Complete |
 | SET-02 | Phase 5 | Complete |
-| SET-03 | Phase 5 | Pending |
+| SET-03 | Phase 5 | Complete |
 | CONN-04 | Phase 5 | Pending |
 | CONN-05 | Phase 5 | Pending |
 | CONN-01 | Phase 6 | Pending |

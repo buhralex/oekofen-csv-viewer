@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 5 of 6 (Settings and Pipeline Foundation)
-Plan: 1 of 4 complete (ready for 05-02)
+Plan: 2 of 4 complete (ready for 05-03)
 Status: In progress
-Last activity: 2026-02-21 — Plan 05-01 complete
+Last activity: 2026-02-21 — Plan 05-02 complete
 
-Progress: [█░░░░░░░░░] 17% (1/6 plans complete)
+Progress: [██░░░░░░░░] 33% (2/6 plans complete)
 
 ## Performance Metrics
 
@@ -32,11 +32,12 @@ Progress: [█░░░░░░░░░] 17% (1/6 plans complete)
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-**v1.1 Plans Completed: 1/6**
+**v1.1 Plans Completed: 2/6**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
 | 05-01 | Settings Data Layer + Onboarding Prompt | 2min | 2 | Complete |
+| 05-02 | Settings Modal UI + Gear Icon Entry Points | 15min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -52,7 +53,9 @@ Key architectural decisions relevant to v1.1:
 - **Settings modal follows picker modal pattern** — create/destroy in JS on demand (lines 2326–2513 of index.html are the reference)
 - **Rate limit: 2500ms, timestamp guard** — write `_lastFetchAt` only when fetch actually starts; never auto-retry
 - **saveSettings() auto-calls dismissOnboarding()** — prompt never reappears after settings are persisted (05-01)
-- **openSettingsModal() guarded by typeof check** — onboarding connect button safe until 05-02 adds the function
+- **openSettingsModal() guarded by typeof check** — onboarding connect button safe until 05-02 adds the function (now defined — guard can remain or be simplified)
+- **Settings modal create/destroy pattern** — openSettingsModal() creates modal on demand, closeSettingsModal() removes it; _settingsEscHandler stored at module level to prevent handler leaks
+- **API Password uses type=text** — token appears in URL; masking impedes verification with no security gain
 
 ### Pending Todos
 
@@ -66,5 +69,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 05-01-PLAN.md (Settings Data Layer + Onboarding Prompt)
+Stopped at: Completed 05-02-PLAN.md (Settings Modal UI + Gear Icon Entry Points)
 Resume file: none
