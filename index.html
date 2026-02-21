@@ -854,6 +854,12 @@
       <p class="sub">touch_YYYYMMDD.csv</p>
       <button id="pick-file-btn">Select File</button>
       <input type="file" id="file-input" accept=".csv" style="display:none">
+      <!-- Onboarding prompt (v1.1) — hidden once dismissed or settings saved -->
+      <div id="onboarding-prompt" style="display:none; margin-top:20px; padding:14px 18px; background:var(--blue-dim); border:1px solid rgba(37,99,235,0.18); border-radius:var(--r-md); text-align:center; max-width:320px;">
+        <p style="font-size:13px; color:var(--text-2); margin-bottom:10px;">Connect directly to your OekoFEN heater to download log files without manual export.</p>
+        <button id="onboarding-connect-btn" style="background:var(--blue); color:#fff; border:none; border-radius:var(--r-sm); padding:7px 16px; font-size:13px; font-family:var(--font); cursor:pointer; font-weight:500;">Connect to heater</button>
+        <button id="onboarding-dismiss-btn" style="background:none; border:none; color:var(--text-3); font-size:12px; cursor:pointer; margin-top:8px; display:block; width:100%; font-family:var(--font);">No thanks, I'll use file drop</button>
+      </div>
     </div>
   </div>
 
@@ -905,6 +911,83 @@
       minimap:       null,   // { instance: uPlot, updateSelection: fn } — set by createMinimap()
     };
     window.AppState = AppState; // expose for debugging
+
+    // ─── Settings (v1.1) ──────────────────────────────────────────
+    const SETTINGS_KEY = 'oekofen-viewer-settings';
+    const _settings = { ip: '', port: '4321', password: '' };
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          _settings.ip       = parsed.ip       || '';
+          _settings.port     = parsed.port     || '4321';
+          _settings.password = parsed.password || '';
+        }
+      } catch (e) {
+        console.warn('[loadSettings] failed:', e.name);
+      }
+    }
+
+    function saveSettings(ip, port, password) {
+      _settings.ip       = ip;
+      _settings.port     = port || '4321';
+      _settings.password = password;
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+          ip:       _settings.ip,
+          port:     _settings.port,
+          password: _settings.password,
+        }));
+      } catch (e) {
+        console.warn('[saveSettings] localStorage write failed:', e.name);
+      }
+      dismissOnboarding();
+    }
+
+    const ONBD_KEY = 'oekofen-viewer-onboarding';
+
+    function isOnboardingDismissed() {
+      try {
+        return localStorage.getItem(ONBD_KEY) === 'dismissed';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function dismissOnboarding() {
+      try {
+        localStorage.setItem(ONBD_KEY, 'dismissed');
+      } catch (e) {
+        console.warn('[dismissOnboarding] localStorage write failed:', e.name);
+      }
+      const el = document.getElementById('onboarding-prompt');
+      if (el) el.style.display = 'none';
+    }
+
+    function initOnboardingPrompt() {
+      // Show only if: no settings saved AND not previously dismissed
+      if (_settings.ip || isOnboardingDismissed()) return;
+      const prompt = document.getElementById('onboarding-prompt');
+      if (prompt) prompt.style.display = '';
+
+      const connectBtn = document.getElementById('onboarding-connect-btn');
+      if (connectBtn) {
+        connectBtn.addEventListener('click', () => {
+          dismissOnboarding();
+          if (typeof openSettingsModal === 'function') openSettingsModal();
+        });
+      }
+
+      const dismissBtn = document.getElementById('onboarding-dismiss-btn');
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+          dismissOnboarding();
+        });
+      }
+    }
 
     // ─── Column descriptor shape (for Phase 2+) ───────────────────
     // {
@@ -2536,6 +2619,8 @@
     });
 
     // ─── Init ─────────────────────────────────────────────────────
+    loadSettings();
+    initOnboardingPrompt();
     setStatus('Ready — drop an OekoFEN CSV file to begin');
   </script>
 </body>
