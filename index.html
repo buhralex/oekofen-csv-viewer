@@ -1654,8 +1654,8 @@
       // Phase 4.2: Wire legend click toggle
       wireLegendClicks(AppState.chart);
 
-      // Sync initial legend row visibility with series show state set above.
-      // Without this, rows for hidden series would be visible until applyRestoredPrefs runs.
+      // Initialize legend rows: non-DEFAULT series start out-of-view — hide from legend
+      // with display:none directly (not via applyLegendRowStyle, which would only fade them).
       const initLegend = AppState.chart.root ? AppState.chart.root.querySelector('.u-legend') : null;
       if (initLegend) {
         const initTbody = initLegend.querySelector('tbody');
@@ -1665,7 +1665,11 @@
             .forEach((row, rowIdx) => {
               const si = rowIdx + 1;
               if (si < AppState.chart.series.length) {
-                applyLegendRowStyle(row, AppState.chart.series[si].show === false);
+                if (AppState.chart.series[si].show === false) {
+                  row.style.display = 'none';   // out-of-view at startup
+                } else {
+                  row.style.cursor = 'pointer'; // DEFAULT series: just add pointer
+                }
               }
             });
         }
@@ -1987,7 +1991,9 @@
         }
       }
 
-      // Restore legend row inline styles to match new show state
+      // Sync legend rows: in-view series shown (setActiveView forces show:true for all);
+      // out-of-view series hidden from legend with display:none (not via applyLegendRowStyle,
+      // so they can be faded/unchecked if re-added via picker later).
       const legend = u.root ? u.root.querySelector('.u-legend') : null;
       if (legend) {
         const tbody = legend.querySelector('tbody');
@@ -1996,8 +2002,12 @@
           rows.forEach((row, rowIdx) => {
             const seriesIdx = rowIdx + 1;
             if (seriesIdx < u.series.length) {
-              const isHidden = u.series[seriesIdx].show === false;
-              applyLegendRowStyle(row, isHidden);
+              if (targetSet.has(u.series[seriesIdx].label)) {
+                applyLegendRowStyle(row, false);   // in-view: always shown after tab switch
+              } else {
+                row.style.display = 'none';        // out-of-view: off legend
+                row.style.opacity = '';
+              }
             }
           });
         }
@@ -2006,15 +2016,19 @@
       updateViewState();
     }
 
-    // Show or hide a legend row element.
-    // Hidden rows use display:none so the legend only lists currently-active series.
-    // Use the picker modal to add back a hidden series.
+    // Show or dim a legend row element.
+    // Hidden rows stay visible in the legend as faded/unchecked so the user can click
+    // them again to restore. Series outside the current view are hidden with display:none
+    // directly by setActiveView() and applyRestoredPrefs() — not through this function.
     // Called by setActiveView(), legend click handler, applyRestoredPrefs(), and init.
     function applyLegendRowStyle(row, isHidden) {
       if (isHidden) {
-        row.style.display = 'none';
+        row.style.display = '';
+        row.style.opacity = '0.35';
+        row.style.cursor = 'pointer';
       } else {
         row.style.display = '';
+        row.style.opacity = '';
         row.style.cursor = 'pointer';
       }
     }
@@ -2231,7 +2245,17 @@
         }
       }
 
-      // Sync legend row inline styles to restored state
+      // Compute matched view first — needed to determine which rows are in-view vs out-of-view
+      const matchedView = matchPreset(validSeries, presets);
+      _activeView = matchedView;
+      updateTabHighlight(matchedView);
+
+      // For named presets the viewSet is the preset list; for 'Custom' use the visible set
+      // (series that aren't visible in a Custom state aren't part of the selection).
+      const viewPreset = presets.get(matchedView);
+      const viewSet = viewPreset ? new Set(viewPreset) : validSet;
+
+      // Sync legend rows: in-view series shown/faded; out-of-view series off legend
       const legend = u.root ? u.root.querySelector('.u-legend') : null;
       if (legend) {
         const tbody = legend.querySelector('tbody');
@@ -2240,17 +2264,18 @@
           rows.forEach((row, rowIdx) => {
             const seriesIdx = rowIdx + 1;
             if (seriesIdx < u.series.length) {
+              const rawName = u.series[seriesIdx].label;
               const isHidden = u.series[seriesIdx].show === false;
-              applyLegendRowStyle(row, isHidden);
+              if (viewSet.has(rawName)) {
+                applyLegendRowStyle(row, isHidden);  // in-view: shown or faded
+              } else {
+                row.style.display = 'none';           // out-of-view: off legend
+                row.style.opacity = '';
+              }
             }
           });
         }
       }
-
-      // Restore tab indicator state
-      const matchedView = matchPreset(validSeries, presets);
-      _activeView = matchedView;
-      updateTabHighlight(matchedView);
 
       // NOTE: Do NOT call savePrefs() here — we're restoring, not changing prefs
     }
