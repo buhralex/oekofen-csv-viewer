@@ -860,13 +860,19 @@
         <button id="onboarding-connect-btn" style="background:var(--blue); color:#fff; border:none; border-radius:var(--r-sm); padding:7px 16px; font-size:13px; font-family:var(--font); cursor:pointer; font-weight:500;">Connect to heater</button>
         <button id="onboarding-dismiss-btn" style="background:none; border:none; color:var(--text-3); font-size:12px; cursor:pointer; margin-top:8px; display:block; width:100%; font-family:var(--font);">No thanks, I'll use file drop</button>
       </div>
+      <button id="settings-btn-drop" title="Heater Settings" style="margin-top:12px; background:none; border:1px solid var(--sep-strong); border-radius:var(--r-sm); cursor:pointer; color:var(--text-3); padding:5px 12px; font-size:12px; font-family:var(--font); display:inline-flex; align-items:center; gap:5px; transition:color 0.15s, border-color 0.15s;">
+        <span style="font-size:14px;">&#9881;</span> Heater Settings
+      </button>
     </div>
   </div>
 
   <!-- Header bar: compact, shown after file loads -->
   <header id="app-header">
     <span id="header-filename"></span>
-    <button id="load-another-btn">Load Another</button>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="settings-btn" title="Heater Settings" style="background:none; border:none; cursor:pointer; color:var(--text-2); padding:4px 6px; border-radius:var(--r-sm); display:flex; align-items:center; font-size:18px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='var(--text-1)'" onmouseout="this.style.color='var(--text-2)'">&#9881;</button>
+      <button id="load-another-btn">Load Another</button>
+    </div>
   </header>
 
   <!-- Data summary: shown after load -->
@@ -2595,6 +2601,137 @@
       document.addEventListener('keydown', onEscape);
     }
 
+    // ─── Settings Modal (v1.1) ────────────────────────────────────
+
+    function closeSettingsModal() {
+      const el = document.getElementById('settings-modal');
+      if (el) el.remove();
+      document.removeEventListener('keydown', _settingsEscHandler);
+    }
+
+    let _settingsEscHandler = null;
+
+    function openSettingsModal() {
+      if (document.getElementById('settings-modal')) return; // prevent double-open
+
+      // ── Backdrop ────────────────────────────────────────────────
+      const backdrop = document.createElement('div');
+      backdrop.id = 'settings-modal';
+      backdrop.style.cssText = [
+        'position:fixed; inset:0; z-index:200;',
+        'background:rgba(22,25,43,0.35);',
+        'display:flex; align-items:center; justify-content:center;',
+      ].join('');
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeSettingsModal();
+      });
+
+      // ── Dialog ──────────────────────────────────────────────────
+      const dialog = document.createElement('div');
+      dialog.style.cssText = [
+        'background:var(--bg-l1); border-radius:var(--r-lg);',
+        'box-shadow:0 8px 32px rgba(22,25,43,0.18);',
+        'width:360px; max-width:calc(100vw - 32px);',
+        'font-family:var(--font);',
+      ].join('');
+
+      // Header
+      const header = document.createElement('div');
+      header.style.cssText = 'padding:16px 20px 0; font-size:15px; font-weight:600; color:var(--text-1);';
+      header.textContent = 'Heater Connection Settings';
+      dialog.appendChild(header);
+
+      // Body
+      const body = document.createElement('div');
+      body.style.cssText = 'padding:16px 20px;';
+
+      function makeField(labelText, inputId, placeholder, currentValue) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'margin-bottom:14px;';
+        const lbl = document.createElement('label');
+        lbl.htmlFor = inputId;
+        lbl.style.cssText = 'display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:4px;';
+        lbl.textContent = labelText;
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = inputId;
+        inp.placeholder = placeholder;
+        inp.value = currentValue;
+        inp.style.cssText = [
+          'width:100%; padding:7px 10px;',
+          'border:1px solid var(--sep-strong); border-radius:var(--r-sm);',
+          'font-size:13px; font-family:var(--font); color:var(--text-1);',
+          'background:var(--bg-l2); outline:none;',
+          'transition:border-color 0.15s;',
+          'box-sizing:border-box;',
+        ].join('');
+        inp.addEventListener('focus', () => inp.style.borderColor = 'var(--blue)');
+        inp.addEventListener('blur',  () => inp.style.borderColor = 'var(--sep-strong)');
+        wrap.appendChild(lbl);
+        wrap.appendChild(inp);
+        return wrap;
+      }
+
+      body.appendChild(makeField('IP Address', 'settings-ip',   '192.168.1.xxx', _settings.ip));
+      body.appendChild(makeField('Port',       'settings-port', '4321',          _settings.port));
+
+      // Password field with note (not type="password" — API token shown in URL, masking impedes verification)
+      const pwWrap = makeField('API Password', 'settings-password', 'your-api-password', _settings.password);
+      const pwNote = document.createElement('p');
+      pwNote.style.cssText = 'font-size:11px; color:var(--text-3); margin-top:3px;';
+      pwNote.textContent = 'Stored locally in your browser. Not transmitted to any server.';
+      pwWrap.appendChild(pwNote);
+      body.appendChild(pwWrap);
+
+      dialog.appendChild(body);
+
+      // Footer
+      const footer = document.createElement('div');
+      footer.style.cssText = [
+        'padding:12px 20px 16px;',
+        'display:flex; justify-content:flex-end; gap:8px;',
+        'border-top:1px solid var(--sep);',
+      ].join('');
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.cssText = [
+        'padding:7px 16px; border-radius:var(--r-sm); border:1px solid var(--sep-strong);',
+        'background:none; color:var(--text-2); font-size:13px; font-family:var(--font);',
+        'cursor:pointer;',
+      ].join('');
+      cancelBtn.addEventListener('click', closeSettingsModal);
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.style.cssText = [
+        'padding:7px 16px; border-radius:var(--r-sm); border:none;',
+        'background:var(--blue); color:#fff; font-size:13px; font-family:var(--font);',
+        'font-weight:500; cursor:pointer;',
+      ].join('');
+      saveBtn.addEventListener('click', () => {
+        const ip  = document.getElementById('settings-ip').value.trim();
+        const port = document.getElementById('settings-port').value.trim();
+        const pass = document.getElementById('settings-password').value.trim();
+        saveSettings(ip, port, pass);
+        closeSettingsModal();
+        showToast('Settings saved.', 'info', 2000);
+      });
+
+      footer.appendChild(cancelBtn);
+      footer.appendChild(saveBtn);
+      dialog.appendChild(footer);
+      backdrop.appendChild(dialog);
+      document.body.appendChild(backdrop);
+
+      // Focus first field
+      setTimeout(() => { const el = document.getElementById('settings-ip'); if (el) el.focus(); }, 50);
+
+      // Escape to close
+      _settingsEscHandler = (e) => { if (e.key === 'Escape') closeSettingsModal(); };
+      document.addEventListener('keydown', _settingsEscHandler);
+    }
+
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
     const pickBtn = document.getElementById('pick-file-btn');
     const fileInput = document.getElementById('file-input');
@@ -2617,6 +2754,13 @@
       AppState.chartSeries = null;
       setStatus('Ready \u2014 drop an OekoFEN CSV file to begin');
     });
+
+    // ─── Settings button wiring (v1.1) ────────────────────────────
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
+
+    const settingsBtnDrop = document.getElementById('settings-btn-drop');
+    if (settingsBtnDrop) settingsBtnDrop.addEventListener('click', openSettingsModal);
 
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
