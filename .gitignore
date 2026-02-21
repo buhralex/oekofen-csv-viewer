@@ -1,0 +1,15 @@
+# GSD planning directory
+.planning/
+
+# Claude
+.claude/
+
+# Visual Studio
+.vs/
+bin/
+obj/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
