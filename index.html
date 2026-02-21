@@ -1309,8 +1309,10 @@
         const flipX  = (left + ttW + OFFSET) > chartW;
         tooltip.style.left = (flipX ? (left - ttW - OFFSET) : (left + OFFSET)) + 'px';
 
-        // Vertical position: keep top edge inside chart (don't go above 0)
-        tooltip.style.top = Math.max(0, top - 20) + 'px';
+        // Vertical position: keep tooltip fully inside chart (don't go above 0 or below bottom)
+        const chartH = u.over.clientHeight;
+        const ttH    = tooltip.offsetHeight || 150;
+        tooltip.style.top = Math.min(Math.max(0, top - 20), Math.max(0, chartH - ttH)) + 'px';
       }
 
       return {
@@ -1458,7 +1460,20 @@
       destroyChart();
 
       const dataModel = AppState.dataModel;
-      const { data, series } = buildChartData(dataModel, DEFAULT_SERIES);
+      // Build chart with ALL dataModel columns so any parameter can be shown/hidden via the
+      // picker without recreating the chart. DEFAULT_SERIES (those present in the file) come
+      // first and are visible; all other columns follow and are initially hidden.
+      const defaultSet = new Set(DEFAULT_SERIES.filter(rn =>
+        dataModel.columns.some(c => c.rawName === rn)));
+      const allRawNames = [
+        ...DEFAULT_SERIES.filter(rn => dataModel.columns.some(c => c.rawName === rn)),
+        ...dataModel.columns.filter(c => !defaultSet.has(c.rawName)).map(c => c.rawName),
+      ];
+      const { data, series } = buildChartData(dataModel, allRawNames);
+      // Mark non-DEFAULT series as initially hidden
+      for (let i = 1; i < series.length; i++) {
+        if (!defaultSet.has(series[i].label)) series[i].show = false;
+      }
 
       // Format chart title as DD.MM.YYYY from AppState.fileDate (YYYYMMDD) or first timestamp
       let chartTitle = '';
@@ -1639,10 +1654,27 @@
       // Phase 4.2: Wire legend click toggle
       wireLegendClicks(AppState.chart);
 
+      // Sync initial legend row visibility with series show state set above.
+      // Without this, rows for hidden series would be visible until applyRestoredPrefs runs.
+      const initLegend = AppState.chart.root ? AppState.chart.root.querySelector('.u-legend') : null;
+      if (initLegend) {
+        const initTbody = initLegend.querySelector('tbody');
+        if (initTbody) {
+          Array.from(initTbody.childNodes)
+            .filter(n => n.nodeType === 1)
+            .forEach((row, rowIdx) => {
+              const si = rowIdx + 1;
+              if (si < AppState.chart.series.length) {
+                applyLegendRowStyle(row, AppState.chart.series[si].show === false);
+              }
+            });
+        }
+      }
+
       // Phase 4.4: Restore saved prefs (MUST be after minimap is fully wired above)
       applyRestoredPrefs(AppState.dataModel, _viewPresets);
 
-      setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + (data.length - 1) + ' series');
+      setStatus('Chart rendered \u2014 ' + dataModel.rowCount + ' rows, ' + defaultSet.size + ' of ' + (data.length - 1) + ' parameters visible');
     }
 
     // STEP 7 — Build the columnar data model
@@ -1974,18 +2006,15 @@
       updateViewState();
     }
 
-    // Apply / remove inline opacity + line-through on a legend row element.
-    // Called by setActiveView() and the legend click handler (04-02).
+    // Show or hide a legend row element.
+    // Hidden rows use display:none so the legend only lists currently-active series.
+    // Use the picker modal to add back a hidden series.
+    // Called by setActiveView(), legend click handler, applyRestoredPrefs(), and init.
     function applyLegendRowStyle(row, isHidden) {
       if (isHidden) {
-        row.style.opacity = '0.35';
-        const label = row.querySelector('.u-label');
-        if (label) label.style.textDecoration = 'line-through';
-        row.style.cursor = 'pointer';
+        row.style.display = 'none';
       } else {
-        row.style.opacity = '';
-        const label = row.querySelector('.u-label');
-        if (label) label.style.textDecoration = '';
+        row.style.display = '';
         row.style.cursor = 'pointer';
       }
     }
