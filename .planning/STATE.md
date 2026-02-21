@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 4 - Parameter Management
+**Current focus:** COMPLETE — all 4 phases delivered and verified
 
 ## Current Position
 
-Phase: 4 of 4 (Parameter Management) — IN PROGRESS
-Plan: 3 of 4 complete
-Status: 04-03 complete — picker modal with openPickerModal()/closePickerModal(); group sections, pre-checked live state, Apply/Cancel/Escape/backdrop dismiss, binary badges; ready for 04-04 (preferences persistence)
-Last activity: 2026-02-19 — 04-03 executed: openPickerModal() builds dialog DOM on each open, closePickerModal() removes from DOM, wired to destroyChart() and #params-btn
+Phase: 4 of 4 (Parameter Management) — COMPLETE
+Plan: 4 of 4 complete
+Status: 04-04 complete — localStorage persistence, all-columns chart build, two-state legend hiding, tooltip clamp, 29-check verification approved
+Last activity: 2026-02-21 — Phase 4 complete; all PARM requirements verified
 
-Progress: [██████████] 75% (3/4 phases complete)
+Progress: [██████████] 100% (4/4 phases complete)
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Progress: [██████████] 75% (3/4 phases complete)
 | Phase 04-parameter-management P01 | 2 | 2 tasks | 1 files |
 | Phase 04-parameter-management P02 | 1 | 1 tasks | 1 files |
 | Phase 04-parameter-management P03 | 1 | 1 tasks | 1 files |
+| Phase 04-parameter-management P04 | ~90 min | 2 tasks + 5 bug fixes | 1 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,11 @@ Recent decisions affecting current work:
 - [Phase 04-parameter-management]: closePickerModal() is third cleanup in destroyChart() — before chart.destroy(), safe when chart is null
 - [Phase 04-parameter-management]: Escape listener self-removes via onEscape named function — no lingering global keydown listener after modal close
 - [Phase 04-parameter-management]: _paramsHandler DOM property on #params-btn — removes previous listener before re-attaching on file reload
+- [04-04]: Chart built with ALL dataModel columns (DEFAULT_SERIES first, show:true; rest show:false) — picker shows/hides any column without chart recreate
+- [04-04]: Two-state legend hiding: applyLegendRowStyle uses faded (opacity:0.35) for in-view hidden; setActiveView/applyRestoredPrefs use display:none directly for out-of-view
+- [04-04]: applyRestoredPrefs computes matchedView before legend loop; viewSet = preset list (named) or validSet (Custom) for in/out distinction
+- [04-04]: Tooltip vertical clamp: Math.min(Math.max(0, top-20), Math.max(0, chartH-ttH)) — prevents minimap overlap
+- [04-04]: Legend click double-toggle fixed: capture phase (true) + e.stopPropagation() intercepts before uPlot built-in th handler; removeEventListener also passes true
 
 ### Pending Todos
 
@@ -106,10 +112,10 @@ None.
 - [Phase 1 RESOLVED]: CSV schema validated — ISO-8859-1, semicolon delimiter, trailing semicolons, trailing spaces in column names. Plans reflect actual file format.
 - [Phase 1 RESOLVED]: Column group rules hardcoded from real file inspection — HK1, WW1, PU1, PE1 prefix-based; Boiler explicit list.
 - [Advisory]: PARS-03 implemented via TextDecoder('windows-1252') not BOM stripping — real file has no BOM. Excel-generated UTF-8 BOM files not handled (future concern if needed).
-- [Advisory 02-01]: DEFAULT_SERIES rawNames are based on the known real OekoFEN CSV schema. If a file has different column names, buildChartData() will warn and skip unresolved series. Phase 4 will make series selection dynamic.
+- [Advisory 02-01 RESOLVED]: DEFAULT_SERIES names corrected from Phase 2 placeholders to real CSV names (verified against touch_20260216.csv). Chart now built with all 64 columns; non-DEFAULT initialized hidden. Picker handles any column.
 
 ## Session Continuity
 
-Last session: 2026-02-19
-Stopped at: Completed 04-03-PLAN.md (parameter picker modal)
-Resume file: .planning/phases/04-parameter-management/04-04-PLAN.md
+Last session: 2026-02-21
+Stopped at: Phase 4 complete — all 29 verification checks approved. Project feature-complete.
+Resume file: none
