@@ -1,8 +1,6 @@
 # OekoFEN CSV Viewer
 
-An interactive chart viewer for OekoFEN pellet heater diagnostic data. Drag and drop a daily CSV export from your heater and explore temperature curves, pump states, and pellet unit behavior across the day.
-
-Replaces the static PNG graphs the heater generates — those overlay all 60+ parameters at once, making it impossible to isolate what caused a heating event.
+An interactive chart viewer for ÖkoFEN pellet heater diagnostic data. Drag and drop a daily CSV export from your heater and explore temperature curves, pump states, and pellet unit behavior across the day.
 
 **No install. No server. Open `index.html` in a browser.**
 
@@ -36,7 +34,7 @@ That's it. No server, no build step, no dependencies to install.
 
 ## CSV Format
 
-OekoFEN pellet heaters export daily diagnostic files with the naming pattern `touch_YYYYMMDD.csv`. The viewer handles the specific format of these files:
+ÖkoFEN pellet heaters export daily diagnostic files with the naming pattern `touch_YYYYMMDD.csv`. The viewer handles the specific format of these files:
 
 | Property | Detail |
 |----------|--------|
