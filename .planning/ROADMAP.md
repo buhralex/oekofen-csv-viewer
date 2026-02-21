@@ -38,12 +38,12 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. Connection settings entered in the panel survive a page reload and pre-fill the fields on re-open
   4. Drag-and-drop and file picker loading continue to work exactly as before — no regression in v1.0 file loading behavior
   5. Internally, a single `onCsvStringAccepted()` function processes CSV text from any source, replacing the duplicated pipeline that previously existed only inside `onFileAccepted()`
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Settings persistence and onboarding prompt
-- [ ] 05-02: Settings modal UI and gear icon entry points
-- [ ] 05-03: Pipeline extraction (onCsvStringAccepted refactor) and regression verification
+- [ ] 05-01-PLAN.md — Settings persistence (_settings, SETTINGS_KEY, loadSettings, saveSettings) and onboarding prompt
+- [ ] 05-02-PLAN.md — Settings modal UI (openSettingsModal, closeSettingsModal) and gear icon entry points in drop zone and header
+- [ ] 05-03-PLAN.md — Pipeline extraction (onCsvStringAccepted refactor) and regression verification checkpoint
 
 ### Phase 6: Download UI and Error Handling
 **Goal**: Users can trigger a direct CSV download from the heater for any log period, see clear feedback for all failure conditions, and the rate limit is enforced transparently
@@ -58,9 +58,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 06-01: fetchCsv() with rate limiter, timeout, and TextDecoder pipeline
-- [ ] 06-02: Drop zone fetch UI (selector, button, loading state) and event wiring
-- [ ] 06-03: Error handling — all failure modes mapped to user-readable messages
+- [ ] 06-01-PLAN.md — fetchCsv() with rate limiter, timeout, and TextDecoder pipeline
+- [ ] 06-02-PLAN.md — Drop zone fetch UI (selector, button, loading state) and event wiring
+- [ ] 06-03-PLAN.md — Error handling — all failure modes mapped to user-readable messages
 
 ## Progress
 
