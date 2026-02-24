@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 6 of 6 (Download UI and Error Handling)
-Plan: 2 of 3 complete
-Status: Plan 06-02 complete, ready for Plan 06-03
-Last activity: 2026-02-24 — Plan 06-02 complete
+Plan: 3 of 3 complete
+Status: Phase 6 complete — gap-closure fix pending (error message text)
+Last activity: 2026-02-24 — Plan 06-03 complete
 
-Progress: [█████░░░░░] 83% (5/6 plans complete)
+Progress: [██████████] 100% (6/6 plans complete)
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Progress: [█████░░░░░] 83% (5/6 plans complete)
 | 05-03 | Pipeline Extraction (onCsvStringAccepted) | 10min | 2 | Complete |
 | 06-01 | Fetch Engine (fetchCsv + error helpers) | 8min | 2 | Complete |
 | 06-02 | Fetch Controls UI + Wiring | 1min | 2 | Complete |
+| 06-03 | Empirical Device Verification | 10min | 1 | Complete |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Key architectural decisions relevant to v1.1:
 - **arrayBuffer() + TextDecoder('windows-1252') mandatory** — response.text() uses UTF-8 default, produces mojibake on OekoFEN CSV degree signs (06-01)
 - **Both ip AND password required to show fetch controls** — prevents URL double-slash bug (http://ip:port//command) when password is empty (06-02)
 - **showFetchControls() sets display='' (empty string)** — restores natural flow layout rather than hardcoding 'block' (06-02)
+- **OekoFEN heater confirmed to block CORS (empirical, 06-03)** — no Access-Control-Allow-Origin header returned; direct browser fetch() is impossible; the heater IS reachable (http://10.10.30.3:4321/ctT9/log_today opens in browser tab) but CORS is a server-side block
+- **Firefox does NOT bypass CORS (empirical, 06-03)** — both Chrome and Firefox enforce CORS identically; "try Firefox" advice in handleFetchNetworkError is wrong and needs a gap-closure fix
 
 ### Pending Todos
 
@@ -72,11 +75,12 @@ None.
 
 ### Blockers/Concerns
 
-- **CORS header behavior of OekoFEN heater is empirically unverified** — all community integrations are server-side; must test on real device during Phase 6. If heater returns no CORS headers, `python -m http.server` becomes a hard prerequisite for direct download.
-- **Chrome 142 Local Network Access** — may block localhost-to-LAN fetch; test Chrome 138+ during Phase 6; document Firefox as primary supported browser if Chrome LNA cannot be resolved.
+- **[RESOLVED 2026-02-24] CORS header behavior of OekoFEN heater** — empirically confirmed: heater does NOT return Access-Control-Allow-Origin headers. Direct browser fetch() is permanently impossible without a CORS proxy or heater firmware update. The heater IS reachable via browser tab (CSV opens at http://10.10.30.3:4321/ctT9/log_today) — the block is strictly CORS. python -m http.server resolves file:// origin errors but NOT CORS from heater.
+- **[GAP] handleFetchNetworkError error message says "try Firefox"** — Firefox enforces CORS identically to Chrome; this advice is wrong. Fix: replace with instruction to open the heater URL directly in the browser for manual download. One-line fix in index.html.
+- **[RESOLVED as N/A 2026-02-24] Chrome 142 Local Network Access** — CORS block from heater occurs before LNA becomes relevant; LNA is not a separate concern given current architecture.
 
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 06-02-PLAN.md (Fetch Controls UI + Wiring)
+Stopped at: Completed 06-03-PLAN.md (Empirical Device Verification) — Phase 6 complete; gap-closure fix pending
 Resume file: none
