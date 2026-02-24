@@ -922,6 +922,10 @@
     const SETTINGS_KEY = 'oekofen-viewer-settings';
     const _settings = { ip: '', port: '4321', password: '' };
 
+    // ─── Fetch state (v1.1 Phase 6) ───────────────────────────
+    let _lastFetchAt = 0;       // Unix ms timestamp when last fetch started (rate-limit guard)
+    let _rateLimitTimer = null; // setTimeout handle for re-enabling the download button
+
     function loadSettings() {
       try {
         const raw = localStorage.getItem(SETTINGS_KEY);
