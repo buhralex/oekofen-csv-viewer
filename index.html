@@ -1895,44 +1895,49 @@
       `;
     }
 
-    // STEP 8 — Full pipeline entry point (Phase 2: adds createChart())
+    // STEP 8 — Shared pipeline entry point (v1.1: extracted from onFileAccepted)
+    // Called by onFileAccepted (file-drop path) and fetchCsv (Phase 6 fetch path).
+    async function onCsvStringAccepted(csvString, displayName, fileDate) {
+      const papaResult = parseCSVString(csvString);
+      const { fields, rows } = normalizeHeaders(papaResult);
+      const dataModel = buildDataModel(fields, rows);
+
+      if (!dataModel.isOekoFEN) {
+        showToast("This doesn't look like OekoFEN data \u2014 missing Datum/Zeit columns.", 'warning');
+        setStatus('Parse failed: no Datum/Zeit columns.');
+        return;
+      }
+
+      const hasAT = dataModel.columns.some(c => c.rawName === 'AT [\u00b0C]' || c.rawName.trim() === 'AT');
+      if (!hasAT) {
+        showToast("This doesn't look like OekoFEN data, but proceeding.", 'warning');
+      }
+
+      AppState.dataModel = dataModel;
+      AppState.filename = displayName;
+      AppState.fileDate = fileDate;
+
+      // Show app view and data summary
+      showAppView(displayName);
+      showDataSummary(dataModel, displayName);
+
+      // Render chart (Phase 2)
+      createChart();
+
+      const issueText = dataModel.parseIssues > 0
+        ? ' \u2014 ' + dataModel.parseIssues + ' rows had parse issues'
+        : '';
+      setStatus('Loaded ' + dataModel.rowCount + ' rows, ' + dataModel.columns.length + ' columns' + issueText);
+    }
+
+    // Thin wrapper — file-drop path only
     async function onFileAccepted(file) {
       setStatus('Loading\u2026');
-
       try {
         const csvString = await readFileAsText(file);
-        const papaResult = parseCSVString(csvString);
-        const { fields, rows } = normalizeHeaders(papaResult);
-        const dataModel = buildDataModel(fields, rows);
-
-        if (!dataModel.isOekoFEN) {
-          showToast("This doesn't look like OekoFEN data \u2014 missing Datum/Zeit columns.", 'warning');
-          setStatus('Parse failed: no Datum/Zeit columns.');
-          return;
-        }
-
-        const hasAT = dataModel.columns.some(c => c.rawName === 'AT [\u00b0C]' || c.rawName.trim() === 'AT');
-        if (!hasAT) {
-          showToast("This doesn't look like OekoFEN data, but proceeding.", 'warning');
-        }
-
-        AppState.dataModel = dataModel;
-        AppState.filename = file.name;
         const dateMatch = file.name.match(/(\d{8})/);
-        AppState.fileDate = dateMatch ? dateMatch[1] : null;
-
-        // Show app view and data summary
-        showAppView(file.name);
-        showDataSummary(dataModel, file.name);
-
-        // Render chart (Phase 2)
-        createChart();
-
-        const issueText = dataModel.parseIssues > 0
-          ? ' \u2014 ' + dataModel.parseIssues + ' rows had parse issues'
-          : '';
-        setStatus('Loaded ' + dataModel.rowCount + ' rows, ' + dataModel.columns.length + ' columns' + issueText);
-
+        const fileDate = dateMatch ? dateMatch[1] : null;
+        await onCsvStringAccepted(csvString, file.name, fileDate);
       } catch (err) {
         console.error('[onFileAccepted] Error:', err);
         showToast('Failed to load file: ' + err.message, 'error');
