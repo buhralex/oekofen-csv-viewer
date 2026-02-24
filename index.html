@@ -2741,6 +2741,117 @@
       document.addEventListener('keydown', _settingsEscHandler);
     }
 
+    // ─── Fetch CSV from heater (v1.1 Phase 6) ─────────────────
+
+    function setFetchButtonState(state) {
+      const btn = document.getElementById('fetch-btn');
+      if (!btn) return;
+      if (state === 'loading') {
+        btn.disabled = true;
+        btn.textContent = 'Downloading\u2026';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Download from Heater';
+      }
+    }
+
+    function handleFetchHttpError(status) {
+      if (status === 401) {
+        showToast('Rate limit active on heater \u2014 wait 2.5 seconds before retrying.', 'warning', 5000);
+        setStatus('Rate limited by heater (HTTP 401).');
+      } else if (status === 404) {
+        showToast('Heater returned 404 \u2014 API password may be incorrect. Check Settings.', 'error', 8000);
+        setStatus('Error: wrong password or bad URL (HTTP 404).');
+      } else {
+        showToast('Heater returned HTTP ' + status + '.', 'error', 6000);
+        setStatus('Fetch error: HTTP ' + status + '.');
+      }
+    }
+
+    function handleFetchNetworkError(err) {
+      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+        // AbortSignal.timeout fires TimeoutError in Chrome 124+, AbortError in Chrome 103-123
+        showToast(
+          'Heater did not respond in 10 seconds. Check the IP address and port in Settings.',
+          'error', 8000
+        );
+        setStatus('Fetch timeout \u2014 heater unreachable.');
+      } else {
+        // TypeError: Failed to fetch — covers CORS from http://localhost AND genuine network failure.
+        // Cannot distinguish CORS from unreachable at this point (browser intentionally withholds info).
+        showToast(
+          'Cannot reach heater. If the heater does not support browser requests (CORS), ' +
+          'try Firefox, or verify the heater IP in Settings.',
+          'error', 10000
+        );
+        setStatus('Fetch failed \u2014 CORS or network error.');
+      }
+    }
+
+    async function fetchCsv(command) {
+      // ERR-01: file:// origin produces a null browser origin — guaranteed CORS block; detect before fetch
+      if (window.location.protocol === 'file:') {
+        showToast(
+          'Network fetch requires a web server. ' +
+          'Open a terminal and run: python -m http.server 8080 ' +
+          'then open http://localhost:8080 in your browser.',
+          'error', 10000
+        );
+        setStatus('Error: cannot fetch from file:// origin.');
+        return;
+      }
+
+      // CONN-03: Rate-limit guard — 2500ms minimum between fetches
+      const now = Date.now();
+      if (_lastFetchAt > 0 && (now - _lastFetchAt) < 2500) {
+        showToast('Please wait before downloading again.', 'warning', 3000);
+        return;
+      }
+      // Write timestamp when fetch actually starts (not when response arrives)
+      _lastFetchAt = Date.now();
+
+      setFetchButtonState('loading');
+
+      const url = 'http://' + _settings.ip + ':' + _settings.port + '/' + _settings.password + '/' + command;
+
+      try {
+        // ERR-02: 10-second timeout via AbortSignal.timeout (Chrome 103+, FF 100+, Safari 16+)
+        const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+
+        if (!response.ok) {
+          // ERR-03: HTTP 404 = wrong password; ERR-04: HTTP 401 = rate limit exceeded on heater
+          handleFetchHttpError(response.status);
+          return;
+        }
+
+        // Decode as windows-1252 (ISO-8859-1 alias) — same encoding as file-drop path.
+        // NEVER use response.text(): defaults to UTF-8, produces mojibake on degree signs and umlauts.
+        const buffer = await response.arrayBuffer();
+        const csvString = new TextDecoder('windows-1252').decode(buffer);
+
+        // Derive fileDate from command name (best-effort; used for chart title)
+        const today = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        let fileDate = null;
+        if (command === 'log_today') {
+          fileDate = '' + today.getFullYear() + pad(today.getMonth() + 1) + pad(today.getDate());
+        }
+        const displayName = command + '.csv';
+
+        // CONN-04: Feed decoded CSV into the shared pipeline (same as file-drop path)
+        await onCsvStringAccepted(csvString, displayName, fileDate);
+
+      } catch (err) {
+        handleFetchNetworkError(err);
+      } finally {
+        // Re-enable button after full 2500ms window from fetch start
+        const elapsed = Date.now() - _lastFetchAt;
+        const remaining = Math.max(0, 2500 - elapsed);
+        clearTimeout(_rateLimitTimer);
+        _rateLimitTimer = setTimeout(() => setFetchButtonState('ready'), remaining);
+      }
+    }
+
     // ─── Pick-file button (LOAD-02) ───────────────────────────────
     const pickBtn = document.getElementById('pick-file-btn');
     const fileInput = document.getElementById('file-input');
