@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 5 of 6 (Settings and Pipeline Foundation)
-Plan: 2 of 4 complete (ready for 05-03)
-Status: In progress
-Last activity: 2026-02-21 — Plan 05-02 complete
+Plan: 3 of 3 complete — Phase 5 complete
+Status: Phase 5 complete, ready for Phase 6
+Last activity: 2026-02-24 — Plan 05-03 complete
 
-Progress: [██░░░░░░░░] 33% (2/6 plans complete)
+Progress: [███░░░░░░░] 50% (3/6 plans complete)
 
 ## Performance Metrics
 
@@ -32,12 +32,13 @@ Progress: [██░░░░░░░░] 33% (2/6 plans complete)
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-**v1.1 Plans Completed: 2/6**
+**v1.1 Plans Completed: 3/6**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
 | 05-01 | Settings Data Layer + Onboarding Prompt | 2min | 2 | Complete |
 | 05-02 | Settings Modal UI + Gear Icon Entry Points | 15min | 2 | Complete |
+| 05-03 | Pipeline Extraction (onCsvStringAccepted) | 10min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -48,7 +49,7 @@ Full decision log archived in PROJECT.md Key Decisions table.
 Key architectural decisions relevant to v1.1:
 - **Single HTML file** — no build step; all v1.1 additions are inline edits to `index.html`
 - **Settings isolated from AppState** — `_settings` lives at module level with its own `'oekofen-viewer-settings'` localStorage key; AppState resets on file load, settings must not
-- **Pipeline extraction first** — `onCsvStringAccepted()` must be verified regression-free before `fetchCsv()` is added as a second caller
+- **Pipeline extraction first** — `onCsvStringAccepted()` extracted and regression-verified; `fetchCsv()` can now call it as a second caller in Phase 6
 - **CORS from file:// is a hard block** — must serve from `http://localhost`; `mode: 'no-cors'` is not a mitigation; document `python -m http.server` in the UI
 - **Settings modal follows picker modal pattern** — create/destroy in JS on demand (lines 2326–2513 of index.html are the reference)
 - **Rate limit: 2500ms, timestamp guard** — write `_lastFetchAt` only when fetch actually starts; never auto-retry
@@ -68,6 +69,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: Completed 05-02-PLAN.md (Settings Modal UI + Gear Icon Entry Points)
+Last session: 2026-02-24
+Stopped at: Completed 05-03-PLAN.md (Pipeline Extraction — onCsvStringAccepted) — Phase 5 complete
 Resume file: none

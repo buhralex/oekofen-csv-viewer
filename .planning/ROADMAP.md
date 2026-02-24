@@ -23,7 +23,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Enable users to download CSV files directly from the OekoFEN heater HTTP API, eliminating the need for manual file export.
 
-- [ ] **Phase 5: Settings and Pipeline Foundation** — Settings modal, onboarding prompt, localStorage persistence, and shared CSV pipeline
+- [x] **Phase 5: Settings and Pipeline Foundation** — Settings modal, onboarding prompt, localStorage persistence, and shared CSV pipeline
 - [ ] **Phase 6: Download UI and Error Handling** — Fetch UI on drop zone, rate limiting, log period selector, and all error conditions
 
 ## Phase Details
@@ -43,7 +43,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 Plans:
 - [x] 05-01-PLAN.md — Settings persistence (_settings, SETTINGS_KEY, loadSettings, saveSettings) and onboarding prompt
 - [x] 05-02-PLAN.md — Settings modal UI (openSettingsModal, closeSettingsModal) and gear icon entry points in drop zone and header
-- [ ] 05-03-PLAN.md — Pipeline extraction (onCsvStringAccepted refactor) and regression verification checkpoint
+- [x] 05-03-PLAN.md — Pipeline extraction (onCsvStringAccepted refactor) and regression verification checkpoint
 
 ### Phase 6: Download UI and Error Handling
 **Goal**: Users can trigger a direct CSV download from the heater for any log period, see clear feedback for all failure conditions, and the rate limit is enforced transparently
@@ -70,5 +70,5 @@ Plans:
 | 2. Chart Rendering | v1.0 | 2/2 | Complete | 2026-02-18 |
 | 3. Navigation and Interaction | v1.0 | 4/4 | Complete | 2026-02-19 |
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
-| 5. Settings and Pipeline Foundation | v1.1 | 2/3 | In Progress | - |
+| 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
 | 6. Download UI and Error Handling | v1.1 | 0/3 | Not started | - |

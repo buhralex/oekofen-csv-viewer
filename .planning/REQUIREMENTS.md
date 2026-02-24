@@ -22,8 +22,8 @@
 - [ ] **CONN-01**: When settings are configured, a log period selector (Today, Yesterday, Log 0–3) and download button are shown alongside the drop zone
 - [ ] **CONN-02**: User can trigger a direct CSV download from the heater API for the selected log period
 - [ ] **CONN-03**: The download button is disabled for 2500ms after each request to enforce the API rate limit
-- [ ] **CONN-04**: Downloaded CSV is loaded into the chart using the same pipeline as drag-and-drop
-- [ ] **CONN-05**: Drag-and-drop and file picker loading remain available at all times regardless of settings
+- [x] **CONN-04**: Downloaded CSV is loaded into the chart using the same pipeline as drag-and-drop
+- [x] **CONN-05**: Drag-and-drop and file picker loading remain available at all times regardless of settings
 
 ### Error Handling (ERR)
 
@@ -60,8 +60,8 @@
 | SET-01 | Phase 5 | Complete |
 | SET-02 | Phase 5 | Complete |
 | SET-03 | Phase 5 | Complete |
-| CONN-04 | Phase 5 | Pending |
-| CONN-05 | Phase 5 | Pending |
+| CONN-04 | Phase 5 | Complete |
+| CONN-05 | Phase 5 | Complete |
 | CONN-01 | Phase 6 | Pending |
 | CONN-02 | Phase 6 | Pending |
 | CONN-03 | Phase 6 | Pending |
