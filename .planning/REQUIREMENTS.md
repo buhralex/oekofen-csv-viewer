@@ -19,7 +19,7 @@
 
 ### Connection (CONN)
 
-- [ ] **CONN-01**: When settings are configured, a log period selector (Today, Yesterday, Log 0–3) and download button are shown alongside the drop zone
+- [x] **CONN-01**: When settings are configured, a log period selector (Today, Yesterday, Log 0–3) and download button are shown alongside the drop zone
 - [x] **CONN-02**: User can trigger a direct CSV download from the heater API for the selected log period
 - [x] **CONN-03**: The download button is disabled for 2500ms after each request to enforce the API rate limit
 - [x] **CONN-04**: Downloaded CSV is loaded into the chart using the same pipeline as drag-and-drop
@@ -62,7 +62,7 @@
 | SET-03 | Phase 5 | Complete |
 | CONN-04 | Phase 5 | Complete |
 | CONN-05 | Phase 5 | Complete |
-| CONN-01 | Phase 6 | Pending |
+| CONN-01 | Phase 6 | Complete |
 | CONN-02 | Phase 6 | Complete |
 | CONN-03 | Phase 6 | Complete |
 | ERR-01 | Phase 6 | Complete |

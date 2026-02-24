@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 6 of 6 (Download UI and Error Handling)
-Plan: 1 of 3 complete
-Status: Plan 06-01 complete, ready for Plan 06-02
-Last activity: 2026-02-24 — Plan 06-01 complete
+Plan: 2 of 3 complete
+Status: Plan 06-02 complete, ready for Plan 06-03
+Last activity: 2026-02-24 — Plan 06-02 complete
 
-Progress: [████░░░░░░] 67% (4/6 plans complete)
+Progress: [█████░░░░░] 83% (5/6 plans complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [████░░░░░░] 67% (4/6 plans complete)
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-**v1.1 Plans Completed: 4/6**
+**v1.1 Plans Completed: 5/6**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
@@ -40,6 +40,7 @@ Progress: [████░░░░░░] 67% (4/6 plans complete)
 | 05-02 | Settings Modal UI + Gear Icon Entry Points | 15min | 2 | Complete |
 | 05-03 | Pipeline Extraction (onCsvStringAccepted) | 10min | 2 | Complete |
 | 06-01 | Fetch Engine (fetchCsv + error helpers) | 8min | 2 | Complete |
+| 06-02 | Fetch Controls UI + Wiring | 1min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ Key architectural decisions relevant to v1.1:
 - **AbortSignal.timeout(10000) over manual AbortController** — browser handles cleanup; no try/finally needed for controller (06-01)
 - **Both 'TimeoutError' and 'AbortError' caught** — Chrome 103-123 fires AbortError, Chrome 124+ fires TimeoutError; both checked for compat (06-01)
 - **arrayBuffer() + TextDecoder('windows-1252') mandatory** — response.text() uses UTF-8 default, produces mojibake on OekoFEN CSV degree signs (06-01)
+- **Both ip AND password required to show fetch controls** — prevents URL double-slash bug (http://ip:port//command) when password is empty (06-02)
+- **showFetchControls() sets display='' (empty string)** — restores natural flow layout rather than hardcoding 'block' (06-02)
 
 ### Pending Todos
 
@@ -75,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 06-01-PLAN.md (Fetch Engine — fetchCsv + error helpers)
+Stopped at: Completed 06-02-PLAN.md (Fetch Controls UI + Wiring)
 Resume file: none

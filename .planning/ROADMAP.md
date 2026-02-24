@@ -59,7 +59,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — fetchCsv() core engine: _lastFetchAt/_rateLimitTimer state vars, all error handling (file://, rate-limit, timeout, HTTP 401/404)
-- [ ] 06-02-PLAN.md — Fetch controls UI: #fetch-controls HTML in drop zone, showFetchControls/hideFetchControls, event wiring, saveSettings + init block integration
+- [x] 06-02-PLAN.md — Fetch controls UI: #fetch-controls HTML in drop zone, showFetchControls/hideFetchControls, event wiring, saveSettings + init block integration
 - [ ] 06-03-PLAN.md — Empirical device verification checkpoint: all 7 test scenarios including CORS behavior, rate-limit guard, and file-drop regression
 
 ## Progress
@@ -71,4 +71,4 @@ Plans:
 | 3. Navigation and Interaction | v1.0 | 4/4 | Complete | 2026-02-19 |
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
-| 6. Download UI and Error Handling | v1.1 | 1/3 | In progress | - |
+| 6. Download UI and Error Handling | v1.1 | 2/3 | In progress | - |
