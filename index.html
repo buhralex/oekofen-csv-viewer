@@ -969,6 +969,12 @@
         console.warn('[saveSettings] localStorage write failed:', e.name);
       }
       dismissOnboarding();
+      // Update fetch controls visibility when settings change
+      if (_settings.ip && _settings.password) {
+        showFetchControls();
+      } else {
+        hideFetchControls();
+      }
     }
 
     const ONBD_KEY = 'oekofen-viewer-onboarding';
@@ -2906,9 +2912,22 @@
     const settingsBtnDrop = document.getElementById('settings-btn-drop');
     if (settingsBtnDrop) settingsBtnDrop.addEventListener('click', openSettingsModal);
 
+    // ─── Fetch button wiring (v1.1 Phase 6) ──────────────────────
+    const fetchBtn = document.getElementById('fetch-btn');
+    if (fetchBtn) {
+      fetchBtn.addEventListener('click', () => {
+        const command = document.getElementById('log-selector').value;
+        fetchCsv(command);
+      });
+    }
+
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
     initOnboardingPrompt();
+    // Show fetch controls if heater settings were previously saved (v1.1 Phase 6)
+    if (_settings.ip && _settings.password) {
+      showFetchControls();
+    }
     setStatus('Ready — drop an OekoFEN CSV file to begin');
   </script>
 </body>
