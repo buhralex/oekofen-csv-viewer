@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 5 — Settings and Pipeline Foundation
+**Current focus:** Phase 6 — Download UI and Error Handling
 
 ## Current Position
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
-Phase: 5 of 6 (Settings and Pipeline Foundation)
-Plan: 3 of 3 complete — Phase 5 complete
-Status: Phase 5 complete, ready for Phase 6
-Last activity: 2026-02-24 — Plan 05-03 complete
+Phase: 6 of 6 (Download UI and Error Handling)
+Plan: 1 of 3 complete
+Status: Plan 06-01 complete, ready for Plan 06-02
+Last activity: 2026-02-24 — Plan 06-01 complete
 
-Progress: [███░░░░░░░] 50% (3/6 plans complete)
+Progress: [████░░░░░░] 67% (4/6 plans complete)
 
 ## Performance Metrics
 
@@ -32,13 +32,14 @@ Progress: [███░░░░░░░] 50% (3/6 plans complete)
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-**v1.1 Plans Completed: 3/6**
+**v1.1 Plans Completed: 4/6**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
 | 05-01 | Settings Data Layer + Onboarding Prompt | 2min | 2 | Complete |
 | 05-02 | Settings Modal UI + Gear Icon Entry Points | 15min | 2 | Complete |
 | 05-03 | Pipeline Extraction (onCsvStringAccepted) | 10min | 2 | Complete |
+| 06-01 | Fetch Engine (fetchCsv + error helpers) | 8min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -57,6 +58,10 @@ Key architectural decisions relevant to v1.1:
 - **openSettingsModal() guarded by typeof check** — onboarding connect button safe until 05-02 adds the function (now defined — guard can remain or be simplified)
 - **Settings modal create/destroy pattern** — openSettingsModal() creates modal on demand, closeSettingsModal() removes it; _settingsEscHandler stored at module level to prevent handler leaks
 - **API Password uses type=text** — token appears in URL; masking impedes verification with no security gain
+- **fetchCsv timestamp guard: _lastFetchAt written before fetch() call** — rate-limit accurate even on immediate network failures (06-01)
+- **AbortSignal.timeout(10000) over manual AbortController** — browser handles cleanup; no try/finally needed for controller (06-01)
+- **Both 'TimeoutError' and 'AbortError' caught** — Chrome 103-123 fires AbortError, Chrome 124+ fires TimeoutError; both checked for compat (06-01)
+- **arrayBuffer() + TextDecoder('windows-1252') mandatory** — response.text() uses UTF-8 default, produces mojibake on OekoFEN CSV degree signs (06-01)
 
 ### Pending Todos
 
@@ -70,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 05-03-PLAN.md (Pipeline Extraction — onCsvStringAccepted) — Phase 5 complete
+Stopped at: Completed 06-01-PLAN.md (Fetch Engine — fetchCsv + error helpers)
 Resume file: none

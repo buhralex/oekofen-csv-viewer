@@ -20,17 +20,17 @@
 ### Connection (CONN)
 
 - [ ] **CONN-01**: When settings are configured, a log period selector (Today, Yesterday, Log 0–3) and download button are shown alongside the drop zone
-- [ ] **CONN-02**: User can trigger a direct CSV download from the heater API for the selected log period
-- [ ] **CONN-03**: The download button is disabled for 2500ms after each request to enforce the API rate limit
+- [x] **CONN-02**: User can trigger a direct CSV download from the heater API for the selected log period
+- [x] **CONN-03**: The download button is disabled for 2500ms after each request to enforce the API rate limit
 - [x] **CONN-04**: Downloaded CSV is loaded into the chart using the same pipeline as drag-and-drop
 - [x] **CONN-05**: Drag-and-drop and file picker loading remain available at all times regardless of settings
 
 ### Error Handling (ERR)
 
-- [ ] **ERR-01**: User sees an actionable message when fetch fails due to CORS (`file://` origin), with instruction to use `python -m http.server`
-- [ ] **ERR-02**: User sees a clear error when the heater is unreachable or request times out (10s timeout)
-- [ ] **ERR-03**: User sees a clear error when the API password is wrong (heater returns 404)
-- [ ] **ERR-04**: User sees a clear error when the rate limit is exceeded (heater returns 401)
+- [x] **ERR-01**: User sees an actionable message when fetch fails due to CORS (`file://` origin), with instruction to use `python -m http.server`
+- [x] **ERR-02**: User sees a clear error when the heater is unreachable or request times out (10s timeout)
+- [x] **ERR-03**: User sees a clear error when the API password is wrong (heater returns 404)
+- [x] **ERR-04**: User sees a clear error when the rate limit is exceeded (heater returns 401)
 
 ## v2 Requirements
 
@@ -63,12 +63,12 @@
 | CONN-04 | Phase 5 | Complete |
 | CONN-05 | Phase 5 | Complete |
 | CONN-01 | Phase 6 | Pending |
-| CONN-02 | Phase 6 | Pending |
-| CONN-03 | Phase 6 | Pending |
-| ERR-01 | Phase 6 | Pending |
-| ERR-02 | Phase 6 | Pending |
-| ERR-03 | Phase 6 | Pending |
-| ERR-04 | Phase 6 | Pending |
+| CONN-02 | Phase 6 | Complete |
+| CONN-03 | Phase 6 | Complete |
+| ERR-01 | Phase 6 | Complete |
+| ERR-02 | Phase 6 | Complete |
+| ERR-03 | Phase 6 | Complete |
+| ERR-04 | Phase 6 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 15 total
