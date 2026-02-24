@@ -863,6 +863,20 @@
       <button id="settings-btn-drop" title="Heater Settings" style="margin-top:12px; background:none; border:1px solid var(--sep-strong); border-radius:var(--r-sm); cursor:pointer; color:var(--text-3); padding:5px 12px; font-size:12px; font-family:var(--font); display:inline-flex; align-items:center; gap:5px; transition:color 0.15s, border-color 0.15s;">
         <span style="font-size:14px;">&#9881;</span> Heater Settings
       </button>
+      <!-- Fetch controls (v1.1 Phase 6) — shown only when settings.ip AND settings.password are set -->
+      <div id="fetch-controls" style="display:none; margin-top:16px; text-align:center;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
+          <select id="log-selector" style="padding:6px 10px; border:1px solid var(--sep-strong); border-radius:var(--r-sm); font-size:13px; font-family:var(--font); background:var(--bg-l2); color:var(--text-1); cursor:pointer;">
+            <option value="log_today">Today</option>
+            <option value="log_yesterday">Yesterday</option>
+            <option value="log0">Log 0</option>
+            <option value="log1">Log 1</option>
+            <option value="log2">Log 2</option>
+            <option value="log3">Log 3</option>
+          </select>
+          <button id="fetch-btn" style="padding:7px 18px; background:var(--blue); color:#fff; border:none; border-radius:var(--r-sm); font-size:13px; font-family:var(--font); font-weight:500; cursor:pointer;">Download from Heater</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2742,6 +2756,16 @@
     }
 
     // ─── Fetch CSV from heater (v1.1 Phase 6) ─────────────────
+
+    function showFetchControls() {
+      const el = document.getElementById('fetch-controls');
+      if (el) el.style.display = '';
+    }
+
+    function hideFetchControls() {
+      const el = document.getElementById('fetch-controls');
+      if (el) el.style.display = 'none';
+    }
 
     function setFetchButtonState(state) {
       const btn = document.getElementById('fetch-btn');
