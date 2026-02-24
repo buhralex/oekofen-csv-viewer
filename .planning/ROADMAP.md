@@ -55,12 +55,12 @@ Plans:
   3. The download button is visibly disabled for 2500ms after each request; a second click within that window shows a user-friendly "please wait" message, not a raw error
   4. When fetch fails due to CORS (file:// origin), the user sees a message explaining the issue and instructing them to serve the app via `python -m http.server`
   5. When the heater is unreachable or the request times out, the user sees a clear actionable error; when the API password is wrong (heater returns 404), the user is directed to check their password in settings
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — fetchCsv() with rate limiter, timeout, and TextDecoder pipeline
-- [ ] 06-02-PLAN.md — Drop zone fetch UI (selector, button, loading state) and event wiring
-- [ ] 06-03-PLAN.md — Error handling — all failure modes mapped to user-readable messages
+- [ ] 06-01-PLAN.md — fetchCsv() core engine: _lastFetchAt/_rateLimitTimer state vars, all error handling (file://, rate-limit, timeout, HTTP 401/404)
+- [ ] 06-02-PLAN.md — Fetch controls UI: #fetch-controls HTML in drop zone, showFetchControls/hideFetchControls, event wiring, saveSettings + init block integration
+- [ ] 06-03-PLAN.md — Empirical device verification checkpoint: all 7 test scenarios including CORS behavior, rate-limit guard, and file-drop regression
 
 ## Progress
 
