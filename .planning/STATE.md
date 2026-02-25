@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 7 — (v1.2 roadmap pending)
+**Current focus:** Phase 7 — Data Accumulation (v1.2 AI Heater Analysis)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 7 — Data Accumulation
 Plan: —
-Status: Defining requirements
-Last activity: 2026-02-25 — Milestone v1.2 started
+Status: Not started
+Last activity: 2026-02-25 — v1.2 roadmap created (Phases 7-11)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -31,7 +31,7 @@ Progress: [░░░░░░░░░░] 0%
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-**v1.1 Plans Completed: 6/7**
+**v1.1 Plans Completed: 8/8**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
@@ -42,6 +42,7 @@ Progress: [░░░░░░░░░░] 0%
 | 06-02 | Fetch Controls UI + Wiring | 1min | 2 | Complete |
 | 06-03 | Empirical Device Verification | 10min | 1 | Complete |
 | 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
+| 06-05 | fetchCsv Proxy Wiring + Error Messages | —min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -74,6 +75,14 @@ Key architectural decisions relevant to v1.1:
 - **handleFetchNetworkError() TypeError is heater-unreachable not CORS (06-05)** — message updated to "Could not reach the heater. Check the IP address and port in Settings."; "try Firefox" removed; proxy makes CORS irrelevant
 - **file:// pre-flight toast references server.py/start.bat (06-05)** — "Double-click start.bat or run: python server.py" replaces obsolete "python -m http.server 8080"
 
+Key architectural decisions relevant to v1.2:
+- **IndexedDB for multi-day storage** — localStorage is too small for multiple full-day CSVs (~70 columns × 1440 rows each); IndexedDB is the correct browser storage for bulk structured data
+- **Store CSVs keyed by date** — upsert on date key prevents duplicates when the same day is re-fetched
+- **Aggregation computed from stored CSVs, not raw rows** — AGGR layer reads IndexedDB records and produces a compact statistics object; raw rows never leave the browser
+- **AI payload is aggregated stats + parsed settings only** — raw CSV rows are never sent to any AI backend; context size stays manageable
+- **Phases 7 and 8 are independent** — IndexedDB storage (Phase 7) and settings baseline parser (Phase 8) have no dependency on each other; both must complete before Phase 9 (aggregation) and Phase 10 (AI) can proceed
+- **DACC-04 (server-side schedule) extends server.py** — auto-fetch loop added to existing proxy server; no new process needed
+
 ### Pending Todos
 
 None.
@@ -81,11 +90,11 @@ None.
 ### Blockers/Concerns
 
 - **[RESOLVED 2026-02-24] CORS header behavior of OekoFEN heater** — empirically confirmed: heater does NOT return Access-Control-Allow-Origin headers. Direct browser fetch() is permanently impossible without a CORS proxy or heater firmware update. The heater IS reachable via browser tab (CSV opens at http://10.10.30.3:4321/ctT9/log_today) — the block is strictly CORS. python -m http.server resolves file:// origin errors but NOT CORS from heater.
-- **[RESOLVED 2026-02-25 via 06-04] handleFetchNetworkError error message** — proxy server now unblocks CORS permanently; 06-05 will wire fetchCsv to use /proxy and update error messages
+- **[RESOLVED 2026-02-25 via 06-04] handleFetchNetworkError error message** — proxy server now unblocks CORS permanently; 06-05 wired fetchCsv to use /proxy and updated error messages
 - **[RESOLVED as N/A 2026-02-24] Chrome 142 Local Network Access** — CORS block from heater occurs before LNA becomes relevant; LNA is not a separate concern given current architecture.
 
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 06-05-PLAN.md (fetchCsv Proxy Wiring) — proxy routing, error messages, and file:// guidance updated; human checkpoint approved end-to-end download; Phase 6 complete
+Stopped at: v1.2 roadmap created — Phases 7-11 defined; ready to plan Phase 7
 Resume file: none

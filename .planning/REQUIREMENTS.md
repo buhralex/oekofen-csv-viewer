@@ -110,12 +110,31 @@
 | ERR-02 | Phase 6 | Complete |
 | ERR-03 | Phase 6 | Complete |
 | ERR-04 | Phase 6 | Complete |
+| DACC-01 | Phase 7 | Pending |
+| DACC-02 | Phase 7 | Pending |
+| DACC-03 | Phase 7 | Pending |
+| DACC-04 | Phase 7 | Pending |
+| BASE-01 | Phase 8 | Pending |
+| BASE-02 | Phase 8 | Pending |
+| BASE-03 | Phase 8 | Pending |
+| AGGR-01 | Phase 9 | Pending |
+| AGGR-02 | Phase 9 | Pending |
+| AICO-01 | Phase 10 | Pending |
+| AICO-02 | Phase 10 | Pending |
+| AICO-03 | Phase 10 | Pending |
+| AICO-04 | Phase 10 | Pending |
+| ANLS-01 | Phase 11 | Pending |
+| ANLS-02 | Phase 11 | Pending |
+| ANLS-03 | Phase 11 | Pending |
+| ANLS-04 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 16 total
 - Mapped to phases: 16 (Phase 5: 8, Phase 6: 8)
+- v1.2 requirements: 13 total
+- Mapped to phases: 13 (Phase 7: 4, Phase 8: 3, Phase 9: 2, Phase 10: 4, Phase 11: 4)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-21*
-*Last updated: 2026-02-25 — CONN-06 added; proxy removed from Out of Scope (Phase 06-03 empirical testing confirmed proxy is required)*
+*Last updated: 2026-02-25 — v1.2 requirements mapped to Phases 7-11*
