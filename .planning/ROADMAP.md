@@ -24,7 +24,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Milestone Goal:** Enable users to download CSV files directly from the OekoFEN heater HTTP API, eliminating the need for manual file export.
 
 - [x] **Phase 5: Settings and Pipeline Foundation** — Settings modal, onboarding prompt, localStorage persistence, and shared CSV pipeline
-- [x] **Phase 6: Download UI and Error Handling** — Fetch UI on drop zone, rate limiting, log period selector, and all error conditions
+- [ ] **Phase 6: Download UI and Error Handling** — Fetch UI on drop zone, rate limiting, log period selector, and all error conditions (gap closure in progress)
 
 ## Phase Details
 
@@ -55,12 +55,14 @@ Plans:
   3. The download button is visibly disabled for 2500ms after each request; a second click within that window shows a user-friendly "please wait" message, not a raw error
   4. When fetch fails due to CORS (file:// origin), the user sees a message explaining the issue and instructing them to serve the app via `python -m http.server`
   5. When the heater is unreachable or the request times out, the user sees a clear actionable error; when the API password is wrong (heater returns 404), the user is directed to check their password in settings
-**Plans**: 3 plans
+**Plans**: 5 plans (3 original + 2 gap closure)
 
 Plans:
 - [x] 06-01-PLAN.md — fetchCsv() core engine: _lastFetchAt/_rateLimitTimer state vars, all error handling (file://, rate-limit, timeout, HTTP 401/404)
 - [x] 06-02-PLAN.md — Fetch controls UI: #fetch-controls HTML in drop zone, showFetchControls/hideFetchControls, event wiring, saveSettings + init block integration
 - [x] 06-03-PLAN.md — Empirical device verification checkpoint: all 7 test scenarios including CORS behavior, rate-limit guard, and file-drop regression
+- [ ] 06-04-PLAN.md — Python proxy server (server.py + start.bat): bypasses OekoFEN heater CORS block server-side
+- [ ] 06-05-PLAN.md — fetchCsv() proxy wiring in index.html + accurate error messages + end-to-end human verification
 
 ## Progress
 
@@ -71,4 +73,4 @@ Plans:
 | 3. Navigation and Interaction | v1.0 | 4/4 | Complete | 2026-02-19 |
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
-| 6. Download UI and Error Handling | v1.1 | 3/3 | Complete | 2026-02-24 |
+| 6. Download UI and Error Handling | v1.1 | 3/5 | Gap closure in progress | — |
