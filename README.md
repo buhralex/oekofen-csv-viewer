@@ -1,4 +1,4 @@
-# OekoFEN CSV Viewer
+# ÖkoFEN CSV Viewer
 
 An interactive chart viewer for ÖkoFEN pellet heater diagnostic data. Load a daily CSV export from your heater — by dragging a saved file onto the page, or by fetching live data directly from the heater — and explore temperature curves, pump states, and pellet unit behavior across the day.
 
