@@ -3047,6 +3047,46 @@
       }
     }
 
+    // ─── DACC-04: On page load, check /history for server-stored CSVs and import ──
+    // any dates not already in IndexedDB. Runs silently — no toasts.
+    // Only runs when app is served via server.py (http: origin). No-op on file://.
+    async function loadHistoryFromServer() {
+      if (window.location.protocol === 'file:') return; // file:// has no server
+      try {
+        const resp = await fetch('/history', { signal: AbortSignal.timeout(3000) });
+        if (!resp.ok) return; // server running but /history not available — skip
+        const serverDates = await resp.json(); // string[] of YYYYMMDD
+        if (!Array.isArray(serverDates) || serverDates.length === 0) return;
+
+        // Only import dates not already in IndexedDB
+        const existing = await getAllHistoryDays();
+        const existingSet = new Set(existing.map(r => r.date));
+        const toImport = serverDates.filter(d => !existingSet.has(d));
+        if (toImport.length === 0) return;
+
+        let imported = 0;
+        for (const date of toImport) {
+          try {
+            const csvResp = await fetch('/history/' + date + '.csv', { signal: AbortSignal.timeout(5000) });
+            if (!csvResp.ok) continue;
+            const buffer = await csvResp.arrayBuffer();
+            const csvString = new TextDecoder('windows-1252').decode(buffer);
+            await upsertHistoryDay(date, csvString);
+            imported++;
+          } catch (e) {
+            console.warn('[history] Failed to import ' + date + ':', e);
+          }
+        }
+        if (imported > 0) {
+          await updateHistoryIndicator();
+          console.log('[history] Imported ' + imported + ' day(s) from server history');
+        }
+      } catch (e) {
+        // Silently swallow — /history may not be available in older server.py versions
+        console.debug('[history] loadHistoryFromServer skipped:', e.message);
+      }
+    }
+
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
     initOnboardingPrompt();
@@ -3056,6 +3096,8 @@
     }
     // DACC-02: Initialize history indicator on page load
     updateHistoryIndicator();
+    // DACC-04: Import server-stored history (from server.py --schedule) silently on startup
+    loadHistoryFromServer();
     setStatus('Ready — drop an OekoFEN CSV file to begin');
   </script>
 </body>
