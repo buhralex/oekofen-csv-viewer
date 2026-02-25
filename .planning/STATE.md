@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 7 — Data Accumulation
-Plan: —
-Status: Not started
-Last activity: 2026-02-25 — v1.2 roadmap created (Phases 7-11)
+Plan: 01 complete (07-01-SUMMARY.md)
+Status: In progress — 1 of N plans complete
+Last activity: 2026-02-25 — 07-01 IndexedDB history storage + indicator complete
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
@@ -43,6 +43,12 @@ Progress: [░░░░░░░░░░] 0%
 | 06-03 | Empirical Device Verification | 10min | 1 | Complete |
 | 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
 | 06-05 | fetchCsv Proxy Wiring + Error Messages | —min | 2 | Complete |
+
+**v1.2 Plans Completed: 1/?**
+
+| Plan | Name | Duration | Tasks | Status |
+|------|------|----------|-------|--------|
+| 07-01 | IndexedDB History Storage + Indicator | 2min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -82,6 +88,9 @@ Key architectural decisions relevant to v1.2:
 - **AI payload is aggregated stats + parsed settings only** — raw CSV rows are never sent to any AI backend; context size stays manageable
 - **Phases 7 and 8 are independent** — IndexedDB storage (Phase 7) and settings baseline parser (Phase 8) have no dependency on each other; both must complete before Phase 9 (aggregation) and Phase 10 (AI) can proceed
 - **DACC-04 (server-side schedule) extends server.py** — auto-fetch loop added to existing proxy server; no new process needed
+- [Phase 07-data-accumulation]: IndexedDB upsert-by-date: keyPath='date' (YYYYMMDD) prevents duplicates; fire-and-forget .then().catch() for storage so chart render never blocked
+- [Phase 07-data-accumulation]: parseDateFromCsvString() added as fallback for log_yesterday/log0-log3 commands where command name yields no reliable date
+- [Phase 07-data-accumulation]: History indicator Clear button rendered inline by updateHistoryIndicator() — no permanent empty button when history is empty
 
 ### Pending Todos
 
@@ -96,5 +105,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: v1.2 roadmap created — Phases 7-11 defined; ready to plan Phase 7
+Stopped at: Completed 07-data-accumulation-01-PLAN.md — IndexedDB history storage implemented; ready for 07-02 or Phase 8
 Resume file: none
