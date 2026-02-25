@@ -24,10 +24,11 @@
 - [x] **CONN-03**: The download button is disabled for 2500ms after each request to enforce the API rate limit
 - [x] **CONN-04**: Downloaded CSV is loaded into the chart using the same pipeline as drag-and-drop
 - [x] **CONN-05**: Drag-and-drop and file picker loading remain available at all times regardless of settings
+- [x] **CONN-06**: A local Python proxy server (`server.py`) is provided that serves the app and proxies heater API requests server-side, bypassing browser CORS restrictions. Phase 06-03 empirical testing confirmed the OekoFEN heater returns no `Access-Control-Allow-Origin` headers, making a server-side proxy the only viable fetch strategy.
 
 ### Error Handling (ERR)
 
-- [x] **ERR-01**: User sees an actionable message when fetch fails due to CORS (`file://` origin), with instruction to use `python -m http.server`
+- [x] **ERR-01**: User sees an actionable message when fetch fails due to `file://` origin (app opened directly as a file instead of via server.py), with instruction to run `python server.py` or double-click `start.bat`
 - [x] **ERR-02**: User sees a clear error when the heater is unreachable or request times out (10s timeout)
 - [x] **ERR-03**: User sees a clear error when the API password is wrong (heater returns 404)
 - [x] **ERR-04**: User sees a clear error when the rate limit is exceeded (heater returns 401)
@@ -42,13 +43,14 @@
 
 ## Out of Scope
 
+> **Note (updated Phase 06):** The original "client-side only" constraint for proxy/backend was invalidated by empirical testing in Phase 06-03, which confirmed the OekoFEN heater returns no CORS headers. `server.py` is now the required startup method. See CONN-06.
+
 | Feature | Reason |
 |---------|--------|
 | HTTPS / SSL for heater connection | Embedded device firmware — no control over TLS |
 | Multiple heater profiles | Single-user, single-heater tool |
 | Auto-refresh / polling | Manual trigger only; rate limit makes polling impractical |
 | Password masking (type="password") | API password is a URL token, not a user credential — masking provides no benefit |
-| Proxy server / backend | Client-side only constraint; users must serve from localhost if CORS is an issue |
 
 ## Traceability
 
@@ -62,6 +64,7 @@
 | SET-03 | Phase 5 | Complete |
 | CONN-04 | Phase 5 | Complete |
 | CONN-05 | Phase 5 | Complete |
+| CONN-06 | Phase 6 | Complete |
 | CONN-01 | Phase 6 | Complete |
 | CONN-02 | Phase 6 | Complete |
 | CONN-03 | Phase 6 | Complete |
@@ -71,10 +74,10 @@
 | ERR-04 | Phase 6 | Complete |
 
 **Coverage:**
-- v1.1 requirements: 15 total
-- Mapped to phases: 15 (Phase 5: 8, Phase 6: 7)
+- v1.1 requirements: 16 total
+- Mapped to phases: 16 (Phase 5: 8, Phase 6: 8)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-21*
-*Last updated: 2026-02-21 — traceability populated after roadmap creation*
+*Last updated: 2026-02-25 — CONN-06 added; proxy removed from Out of Scope (Phase 06-03 empirical testing confirmed proxy is required)*
