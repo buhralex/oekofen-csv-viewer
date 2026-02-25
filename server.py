@@ -98,6 +98,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
 
+        # Block direct access to server-side files (covers curl path-normalization:
+        # "curl /history/../server.py" sends GET /server.py — bypassing /history/ check).
+        if parsed.path.lower().endswith(('.py', '.json', '.sh', '.bat')):
+            self.send_error(404, 'Not found')
+            return
+
         # Route: GET /history — list stored day files as JSON array of date strings
         if parsed.path == '/history':
             try:
