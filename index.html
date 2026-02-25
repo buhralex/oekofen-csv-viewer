@@ -877,6 +877,8 @@
           <button id="fetch-btn" style="padding:7px 18px; background:var(--blue); color:#fff; border:none; border-radius:var(--r-sm); font-size:13px; font-family:var(--font); font-weight:500; cursor:pointer;">Download from Heater</button>
         </div>
       </div>
+      <!-- History indicator (v1.2 Phase 7 — DACC-02/03) -->
+      <div id="history-indicator" style="margin-top:14px; font-size:12px; color:var(--text-3); text-align:center; min-height:18px;"></div>
     </div>
   </div>
 
@@ -1939,6 +1941,13 @@
       AppState.filename = displayName;
       AppState.fileDate = fileDate;
 
+      // DACC-01: Persist to IndexedDB (upsert — same date updates existing record)
+      if (fileDate) {
+        upsertHistoryDay(fileDate, csvString).then(() => updateHistoryIndicator()).catch(e => {
+          console.warn('[history] IndexedDB write failed:', e);
+        });
+      }
+
       // Show app view and data summary
       showAppView(displayName);
       showDataSummary(dataModel, displayName);
@@ -1958,7 +1967,8 @@
       try {
         const csvString = await readFileAsText(file);
         const dateMatch = file.name.match(/(\d{8})/);
-        const fileDate = dateMatch ? dateMatch[1] : null;
+        // DACC-01: Fallback — parse date from CSV content when filename has no date
+        const fileDate = (dateMatch ? dateMatch[1] : null) || parseDateFromCsvString(csvString);
         await onCsvStringAccepted(csvString, file.name, fileDate);
       } catch (err) {
         console.error('[onFileAccepted] Error:', err);
@@ -2865,6 +2875,8 @@
         if (command === 'log_today') {
           fileDate = '' + today.getFullYear() + pad(today.getMonth() + 1) + pad(today.getDate());
         }
+        // DACC-01: Fallback — parse date from CSV content when command-derived date is unavailable
+        fileDate = fileDate || parseDateFromCsvString(csvString);
         const displayName = command + '.csv';
 
         // CONN-04: Feed decoded CSV into the shared pipeline (same as file-drop path)
@@ -2920,6 +2932,121 @@
       });
     }
 
+    // ─── IndexedDB History Module (v1.2 Phase 7 — DACC-01/02/03) ─
+    const HISTORY_DB_NAME    = 'oekofen-history';
+    const HISTORY_DB_VERSION = 1;
+    const HISTORY_STORE      = 'days';
+
+    // Open (or upgrade) the IndexedDB database.
+    // Returns a Promise<IDBDatabase>.
+    // Store schema: keyPath='date' (string YYYYMMDD).
+    async function openHistoryDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(HISTORY_DB_NAME, HISTORY_DB_VERSION);
+        req.onupgradeneeded = e => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+            db.createObjectStore(HISTORY_STORE, { keyPath: 'date' });
+          }
+        };
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror   = e => reject(e.target.error);
+      });
+    }
+
+    // Upsert (put) a record. Existing record for same date is replaced.
+    // date: string YYYYMMDD; csvString: raw decoded CSV text.
+    async function upsertHistoryDay(date, csvString) {
+      if (!date) return;   // no date = cannot key — skip silently
+      const db = await openHistoryDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE, 'readwrite');
+        tx.objectStore(HISTORY_STORE).put({ date, csvString, storedAt: Date.now() });
+        tx.oncomplete = resolve;
+        tx.onerror    = e => reject(e.target.error);
+      });
+    }
+
+    // Return all stored records sorted by date ascending.
+    async function getAllHistoryDays() {
+      const db = await openHistoryDb();
+      return new Promise((resolve, reject) => {
+        const tx  = db.transaction(HISTORY_STORE, 'readonly');
+        const req = tx.objectStore(HISTORY_STORE).getAll();
+        req.onsuccess = e => resolve(
+          (e.target.result || []).sort((a, b) => a.date.localeCompare(b.date))
+        );
+        req.onerror = e => reject(e.target.error);
+      });
+    }
+
+    // Clear all records.
+    async function clearHistoryDb() {
+      const db = await openHistoryDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE, 'readwrite');
+        tx.objectStore(HISTORY_STORE).clear();
+        tx.oncomplete = resolve;
+        tx.onerror    = e => reject(e.target.error);
+      });
+    }
+
+    // Parse date from first data row of CSV string.
+    // OekoFEN CSV Datum format: DD.MM.YYYY (e.g., "12.01.2026")
+    // Returns YYYYMMDD string or null if not parseable.
+    function parseDateFromCsvString(csvString) {
+      if (!csvString) return null;
+      const lines = csvString.split('\n');
+      // Skip header rows (first row is headers); find first data row
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const cols = line.split(';');
+        const datum = (cols[0] || '').trim();
+        // Match DD.MM.YYYY
+        const m = datum.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if (m) {
+          return m[3] + m[2] + m[1]; // YYYYMMDD
+        }
+      }
+      return null;
+    }
+
+    // ─── History Indicator UI (v1.2 Phase 7 — DACC-02/03) ─────────
+
+    // Format YYYYMMDD -> YYYY-MM-DD for display
+    function formatHistoryDate(yyyymmdd) {
+      if (!yyyymmdd || yyyymmdd.length !== 8) return yyyymmdd;
+      return yyyymmdd.slice(0,4) + '-' + yyyymmdd.slice(4,6) + '-' + yyyymmdd.slice(6,8);
+    }
+
+    async function updateHistoryIndicator() {
+      const el = document.getElementById('history-indicator');
+      if (!el) return;
+      try {
+        const days = await getAllHistoryDays();
+        if (days.length === 0) {
+          el.textContent = '';
+          el.innerHTML   = '';
+          return;
+        }
+        const count = days.length;
+        const first = formatHistoryDate(days[0].date);
+        const last  = formatHistoryDate(days[days.length - 1].date);
+        const range = count === 1 ? first : first + ' \u2013 ' + last;
+        // Render as: "12 days stored: 2026-01-14 – 2026-02-25   [Clear]"
+        el.innerHTML =
+          count + ' day' + (count === 1 ? '' : 's') + ' stored: ' + range +
+          '&nbsp;&nbsp;<button id="clear-history-btn" style="background:none; border:none; color:var(--text-3); font-size:11px; cursor:pointer; font-family:var(--font); text-decoration:underline; padding:0;">Clear</button>';
+        document.getElementById('clear-history-btn').addEventListener('click', async () => {
+          await clearHistoryDb();
+          updateHistoryIndicator();
+        });
+      } catch (e) {
+        console.warn('[history] Failed to read IndexedDB for indicator:', e);
+      }
+    }
+
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
     initOnboardingPrompt();
@@ -2927,6 +3054,8 @@
     if (_settings.ip && _settings.password) {
       showFetchControls();
     }
+    // DACC-02: Initialize history indicator on page load
+    updateHistoryIndicator();
     setStatus('Ready — drop an OekoFEN CSV file to begin');
   </script>
 </body>
