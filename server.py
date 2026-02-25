@@ -14,6 +14,7 @@ Usage:
 """
 
 import http.server
+import urllib.error
 import urllib.request
 import urllib.parse
 import webbrowser
@@ -47,6 +48,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Length', str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
+            except urllib.error.HTTPError as exc:
+                # Pass through the heater's actual status code so the browser can handle it correctly.
+                self.send_error(exc.code, f'Proxy error: {exc}')
             except Exception as exc:
                 self.send_error(502, f'Proxy error: {exc}')
         else:

@@ -1157,19 +1157,22 @@
     // STEP 3 — Normalize headers (trim + drop empty trailing column)
     // Trailing semicolon creates a column with key "" or " " — filter it out.
     // Column names also have trailing spaces — trim all.
+    // The heater's HTTP API substitutes '?' for '°' in unit brackets — restore it.
     function normalizeHeaders(papaResult) {
       const rawFields = papaResult.meta.fields;
+      // Normalize: trim whitespace, then replace '?' with '°' inside [...] brackets.
+      const normalize = f => f.trim().replace(/\[([^\]]*)\]/g, (m, u) => '[' + u.replace(/\?/g, '°') + ']');
       const goodFields = rawFields
-        .map(f => f.trim())
+        .map(normalize)
         .filter(f => f !== '');
 
-      // Rebuild data array with trimmed keys, dropping the empty column
+      // Rebuild data array with normalized keys, dropping the empty column
       const rows = papaResult.data.map(row => {
         const normalized = {};
         rawFields.forEach(rawKey => {
-          const trimmed = rawKey.trim();
-          if (trimmed !== '') {
-            normalized[trimmed] = row[rawKey];
+          const key = normalize(rawKey);
+          if (key !== '') {
+            normalized[key] = row[rawKey];
           }
         });
         return normalized;
@@ -1930,11 +1933,6 @@
         showToast("This doesn't look like OekoFEN data \u2014 missing Datum/Zeit columns.", 'warning');
         setStatus('Parse failed: no Datum/Zeit columns.');
         return;
-      }
-
-      const hasAT = dataModel.columns.some(c => c.rawName === 'AT [\u00b0C]' || c.rawName.trim() === 'AT');
-      if (!hasAT) {
-        showToast("This doesn't look like OekoFEN data, but proceeding.", 'warning');
       }
 
       AppState.dataModel = dataModel;
@@ -2787,8 +2785,8 @@
 
     function handleFetchHttpError(status) {
       if (status === 401) {
-        showToast('Rate limit active on heater \u2014 wait 2.5 seconds before retrying.', 'warning', 5000);
-        setStatus('Rate limited by heater (HTTP 401).');
+        showToast('Heater rejected the request (HTTP 401) \u2014 check your API password in Settings.', 'error', 8000);
+        setStatus('Error: wrong password or unauthorized (HTTP 401).');
       } else if (status === 404) {
         showToast('Heater returned 404 \u2014 API password may be incorrect. Check Settings.', 'error', 8000);
         setStatus('Error: wrong password or bad URL (HTTP 404).');
@@ -2855,8 +2853,8 @@
           return;
         }
 
-        // Decode as windows-1252 (ISO-8859-1 alias) — same encoding as file-drop path.
-        // NEVER use response.text(): defaults to UTF-8, produces mojibake on degree signs and umlauts.
+        // OekoFEN HTTP API sends windows-1252 — same encoding as files saved to disk.
+        // NEVER use response.text(): browser defaults to UTF-8, produces mojibake on °, ä, ö, ü.
         const buffer = await response.arrayBuffer();
         const csvString = new TextDecoder('windows-1252').decode(buffer);
 
