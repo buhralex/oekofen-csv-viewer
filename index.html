@@ -2807,23 +2807,21 @@
         );
         setStatus('Fetch timeout \u2014 heater unreachable.');
       } else {
-        // TypeError: Failed to fetch — covers CORS from http://localhost AND genuine network failure.
-        // Cannot distinguish CORS from unreachable at this point (browser intentionally withholds info).
+        // TypeError: Failed to fetch — proxy could not reach the heater (wrong IP, port, or heater offline).
         showToast(
-          'Cannot reach heater. If the heater does not support browser requests (CORS), ' +
-          'try Firefox, or verify the heater IP in Settings.',
-          'error', 10000
+          'Could not reach the heater. Check the IP address and port in Settings.',
+          'error', 8000
         );
-        setStatus('Fetch failed \u2014 CORS or network error.');
+        setStatus('Fetch failed \u2014 heater unreachable.');
       }
     }
 
     async function fetchCsv(command) {
-      // ERR-01: file:// origin produces a null browser origin — guaranteed CORS block; detect before fetch
+      // ERR-01: file:// origin — app must be served via server.py, not opened as a local file
       if (window.location.protocol === 'file:') {
         showToast(
           'Network fetch requires a web server. ' +
-          'Open a terminal and run: python -m http.server 8080 ' +
+          'Double-click start.bat or run: python server.py ' +
           'then open http://localhost:8080 in your browser.',
           'error', 10000
         );
@@ -2842,7 +2840,10 @@
 
       setFetchButtonState('loading');
 
-      const url = 'http://' + _settings.ip + ':' + _settings.port + '/' + _settings.password + '/' + command;
+      // Route through local proxy — server.py fetches the heater server-side, bypassing CORS.
+      // Direct browser fetch to the OekoFEN heater is permanently blocked (no Access-Control-Allow-Origin header).
+      const heaterUrl = 'http://' + _settings.ip + ':' + _settings.port + '/' + _settings.password + '/' + command;
+      const url = '/proxy?url=' + encodeURIComponent(heaterUrl);
 
       try {
         // ERR-02: 10-second timeout via AbortSignal.timeout (Chrome 103+, FF 100+, Safari 16+)
