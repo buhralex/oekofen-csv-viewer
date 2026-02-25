@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 6 of 6 (Download UI and Error Handling)
-Plan: 4 of 5 complete
-Status: Phase 6 gap-closure in progress — proxy server done, fetchCsv wiring pending
-Last activity: 2026-02-25 — Plan 06-04 complete
+Plan: 5 of 5 complete
+Status: Phase 6 complete — all plans executed, proxy wiring done, human checkpoint approved
+Last activity: 2026-02-25 — Plan 06-05 complete
 
-Progress: [█████████░] 88% (7/8 plans complete)
+Progress: [██████████] 100% (8/8 plans complete)
 
 ## Performance Metrics
 
@@ -71,6 +71,9 @@ Key architectural decisions relevant to v1.1:
 - **Firefox does NOT bypass CORS (empirical, 06-03)** — both Chrome and Firefox enforce CORS identically; "try Firefox" advice in handleFetchNetworkError is wrong and needs a gap-closure fix
 - **Proxy server is now required startup method (06-04)** — server.py provides /proxy?url= endpoint; server-side urlopen bypasses CORS; binds to 127.0.0.1:8080; proxy timeout=15s > fetchCsv timeout=10s so browser-side abort fires first
 - **start.bat is the Windows double-click launcher (06-04)** — two-line bat file: @echo off + python server.py; replaces python -m http.server 8080
+- **fetchCsv() proxy URL pattern (06-05)** — constructs /proxy?url=encodeURIComponent(heaterUrl); local var renamed heaterUrl; all other fetch logic (rate-limit, timeout, TextDecoder, error mapping) unchanged
+- **handleFetchNetworkError() TypeError is heater-unreachable not CORS (06-05)** — message updated to "Could not reach the heater. Check the IP address and port in Settings."; "try Firefox" removed; proxy makes CORS irrelevant
+- **file:// pre-flight toast references server.py/start.bat (06-05)** — "Double-click start.bat or run: python server.py" replaces obsolete "python -m http.server 8080"
 
 ### Pending Todos
 
@@ -85,5 +88,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 06-04-PLAN.md (Python Proxy Server) — server.py + start.bat created; fetchCsv wiring pending in 06-05
+Stopped at: Completed 06-05-PLAN.md (fetchCsv Proxy Wiring) — proxy routing, error messages, and file:// guidance updated; human checkpoint approved end-to-end download; Phase 6 complete
 Resume file: none
