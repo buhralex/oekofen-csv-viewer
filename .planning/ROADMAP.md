@@ -84,7 +84,12 @@ Plans:
   2. A visible indicator (e.g., "12 days stored: 2026-01-14 – 2026-02-25") shows how many days are in history and the date range covered
   3. Clicking "Clear history" removes all stored records from IndexedDB and resets the indicator to zero
   4. When running via server.py on an always-on VM, the server automatically fetches and stores each day's log on a configurable schedule without user interaction
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — IndexedDB storage layer (openHistoryDb, upsertHistoryDay, getAllHistoryDays, clearHistoryDb) + pipeline wiring in onCsvStringAccepted() + history indicator UI with Clear button
+- [ ] 07-02-PLAN.md — server.py --schedule flag + background fetch thread + ./history/ disk storage + /history JSON endpoint + /history/YYYYMMDD.csv serve endpoint
+- [ ] 07-03-PLAN.md — Browser loadHistoryFromServer() on startup + end-to-end human verification of all four DACC requirements
 
 ### Phase 8: Settings Baseline
 **Goal**: Users can load their heater's configuration as a one-time baseline and reload it when they change settings on the device
@@ -137,7 +142,7 @@ Plans:
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
 | 6. Download UI and Error Handling | v1.1 | 5/5 | Complete | 2026-02-25 |
-| 7. Data Accumulation | v1.2 | 0/? | Not started | - |
+| 7. Data Accumulation | v1.2 | 0/3 | Not started | - |
 | 8. Settings Baseline | v1.2 | 0/? | Not started | - |
 | 9. Data Aggregation | v1.2 | 0/? | Not started | - |
 | 10. AI Integration | v1.2 | 0/? | Not started | - |
