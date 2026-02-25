@@ -40,7 +40,7 @@
 - [x] **DACC-01**: App stores each day's CSV in IndexedDB as the user fetches from the heater or manually uploads — data persists across sessions
 - [x] **DACC-02**: App shows how many days are stored and the date range covered
 - [x] **DACC-03**: User can clear stored history
-- [ ] **DACC-04**: Server can automatically fetch and store each day's log on a schedule for always-on VM use
+- [x] **DACC-04**: Server can automatically fetch and store each day's log on a schedule for always-on VM use
 
 ### Settings Baseline (BASE)
 
@@ -113,7 +113,7 @@
 | DACC-01 | Phase 7 | Complete |
 | DACC-02 | Phase 7 | Complete |
 | DACC-03 | Phase 7 | Complete |
-| DACC-04 | Phase 7 | Pending |
+| DACC-04 | Phase 7 | Complete |
 | BASE-01 | Phase 8 | Pending |
 | BASE-02 | Phase 8 | Pending |
 | BASE-03 | Phase 8 | Pending |

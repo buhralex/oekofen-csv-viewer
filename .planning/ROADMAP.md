@@ -87,8 +87,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — IndexedDB storage layer (openHistoryDb, upsertHistoryDay, getAllHistoryDays, clearHistoryDb) + pipeline wiring in onCsvStringAccepted() + history indicator UI with Clear button
-- [ ] 07-02-PLAN.md — server.py --schedule flag + background fetch thread + ./history/ disk storage + /history JSON endpoint + /history/YYYYMMDD.csv serve endpoint
+- [x] 07-01-PLAN.md — IndexedDB storage layer (openHistoryDb, upsertHistoryDay, getAllHistoryDays, clearHistoryDb) + pipeline wiring in onCsvStringAccepted() + history indicator UI with Clear button
+- [x] 07-02-PLAN.md — server.py --schedule flag + background fetch thread + ./history/ disk storage + /history JSON endpoint + /history/YYYYMMDD.csv serve endpoint
 - [ ] 07-03-PLAN.md — Browser loadHistoryFromServer() on startup + end-to-end human verification of all four DACC requirements
 
 ### Phase 8: Settings Baseline
@@ -142,7 +142,7 @@ Plans:
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
 | 6. Download UI and Error Handling | v1.1 | 5/5 | Complete | 2026-02-25 |
-| 7. Data Accumulation | 1/3 | In Progress|  | - |
+| 7. Data Accumulation | 2/3 | In Progress | - | - |
 | 8. Settings Baseline | v1.2 | 0/? | Not started | - |
 | 9. Data Aggregation | v1.2 | 0/? | Not started | - |
 | 10. AI Integration | v1.2 | 0/? | Not started | - |

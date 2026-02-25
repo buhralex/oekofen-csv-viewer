@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 7 — Data Accumulation
-Plan: 01 complete (07-01-SUMMARY.md)
-Status: In progress — 1 of N plans complete
-Last activity: 2026-02-25 — 07-01 IndexedDB history storage + indicator complete
+Plan: 02 complete (07-02-SUMMARY.md)
+Status: In progress — 2 of 3 plans complete
+Last activity: 2026-02-25 — 07-02 server.py --schedule flag + history endpoints complete
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -44,11 +44,12 @@ Progress: [█░░░░░░░░░] 10%
 | 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
 | 06-05 | fetchCsv Proxy Wiring + Error Messages | —min | 2 | Complete |
 
-**v1.2 Plans Completed: 1/?**
+**v1.2 Plans Completed: 2/?**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
 | 07-01 | IndexedDB History Storage + Indicator | 2min | 2 | Complete |
+| 07-02 | Scheduled Auto-Fetch + /history Endpoints | 9min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Key architectural decisions relevant to v1.2:
 - [Phase 07-data-accumulation]: IndexedDB upsert-by-date: keyPath='date' (YYYYMMDD) prevents duplicates; fire-and-forget .then().catch() for storage so chart render never blocked
 - [Phase 07-data-accumulation]: parseDateFromCsvString() added as fallback for log_yesterday/log0-log3 commands where command name yields no reliable date
 - [Phase 07-data-accumulation]: History indicator Clear button rendered inline by updateHistoryIndicator() — no permanent empty button when history is empty
+- [Phase 07-data-accumulation]: /history/* non-csv requests return 404 to prevent path traversal fallthrough to SimpleHTTPRequestHandler which normalizes ../ paths
 
 ### Pending Todos
 
@@ -105,5 +107,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 07-data-accumulation-01-PLAN.md — IndexedDB history storage implemented; ready for 07-02 or Phase 8
+Stopped at: Completed 07-02-PLAN.md — server.py --schedule flag, background thread, disk storage, /history endpoints; ready for 07-03
 Resume file: none
