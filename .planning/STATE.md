@@ -2,20 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
+See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 6 — Download UI and Error Handling
+**Current focus:** Phase 7 — (v1.2 roadmap pending)
 
 ## Current Position
 
-Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
-Phase: 6 of 6 (Download UI and Error Handling)
-Plan: 5 of 5 complete
-Status: Phase 6 complete — all plans executed, proxy wiring done, human checkpoint approved
-Last activity: 2026-02-25 — Plan 06-05 complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-25 — Milestone v1.2 started
 
-Progress: [██████████] 100% (8/8 plans complete)
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

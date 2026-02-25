@@ -33,6 +33,40 @@
 - [x] **ERR-03**: User sees a clear error when the API password is wrong (heater returns 404)
 - [x] **ERR-04**: User sees a clear error when the rate limit is exceeded (heater returns 401)
 
+## v1.2 Requirements
+
+### Data Accumulation (DACC)
+
+- [ ] **DACC-01**: App stores each day's CSV in IndexedDB as the user fetches from the heater or manually uploads — data persists across sessions
+- [ ] **DACC-02**: App shows how many days are stored and the date range covered
+- [ ] **DACC-03**: User can clear stored history
+- [ ] **DACC-04**: Server can automatically fetch and store each day's log on a schedule for always-on VM use
+
+### Settings Baseline (BASE)
+
+- [ ] **BASE-01**: User can load the heater settings `.txt` export (drag-drop or file picker) as a one-time baseline
+- [ ] **BASE-02**: App parses the settings text into structured key-value pairs by section (Heizkreis, Warmwasser, CONDENS, etc.)
+- [ ] **BASE-03**: User can reload settings at any time after changing them on the heater
+
+### Data Aggregation (AGGR)
+
+- [ ] **AGGR-01**: App computes per-day statistics from stored CSVs: starts/day, pellet consumption, burner runtime, average outdoor temp, flow/return temp efficiency
+- [ ] **AGGR-02**: App identifies multi-day patterns: start frequency trend, consumption normalized to outdoor temperature
+
+### AI Integration (AICO)
+
+- [ ] **AICO-01**: User configures AI backend in Settings — Ollama endpoint (local) or Claude API key (cloud)
+- [ ] **AICO-02**: AI receives structured context only — aggregated statistics and parsed settings; raw CSV rows are never sent
+- [ ] **AICO-03**: System prompt encodes curated OekoFEN expert knowledge: start frequency norms, heating curve interpretation, pellet consumption benchmarks, maintenance indicators — no Öko Modus recommendations
+- [ ] **AICO-04**: User triggers analysis with one button and receives structured recommendations
+
+### Analysis Panel (ANLS)
+
+- [ ] **ANLS-01**: Analysis panel is a full-screen view replacing the chart, with navigation back to the chart
+- [ ] **ANLS-02**: Recommendations shown as a prioritized list — each with title, explanation, setting name, and suggested value
+- [ ] **ANLS-03**: Maintenance alerts (fan speed drift, ash fill trend, start failure patterns) shown in a separate section
+- [ ] **ANLS-04**: Panel shows when analysis was last run and how many days of data it used
+
 ## v2 Requirements
 
 ### Connection Enhancements
@@ -51,6 +85,10 @@
 | Multiple heater profiles | Single-user, single-heater tool |
 | Auto-refresh / polling | Manual trigger only; rate limit makes polling impractical |
 | Password masking (type="password") | API password is a URL token, not a user credential — masking provides no benefit |
+| `.save` ZIP as data source | The ZIP bundles CSVs that duplicate what the API already provides; settings come from `.txt` only |
+| Öko Modus recommendations | Known to underperform in practice per community feedback; excluded from AI knowledge base |
+| Writing settings back to heater | Heater has no write API; settings changes must be made on the device |
+| Multi-season / year-over-year comparison | Out of scope until multi-day history is proven useful |
 
 ## Traceability
 
