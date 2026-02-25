@@ -61,7 +61,7 @@ Plans:
 - [x] 06-01-PLAN.md — fetchCsv() core engine: _lastFetchAt/_rateLimitTimer state vars, all error handling (file://, rate-limit, timeout, HTTP 401/404)
 - [x] 06-02-PLAN.md — Fetch controls UI: #fetch-controls HTML in drop zone, showFetchControls/hideFetchControls, event wiring, saveSettings + init block integration
 - [x] 06-03-PLAN.md — Empirical device verification checkpoint: all 7 test scenarios including CORS behavior, rate-limit guard, and file-drop regression
-- [ ] 06-04-PLAN.md — Python proxy server (server.py + start.bat): bypasses OekoFEN heater CORS block server-side
+- [x] 06-04-PLAN.md — Python proxy server (server.py + start.bat): bypasses OekoFEN heater CORS block server-side
 - [ ] 06-05-PLAN.md — fetchCsv() proxy wiring in index.html + accurate error messages + end-to-end human verification
 
 ## Progress
@@ -73,4 +73,4 @@ Plans:
 | 3. Navigation and Interaction | v1.0 | 4/4 | Complete | 2026-02-19 |
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
-| 6. Download UI and Error Handling | v1.1 | 3/5 | Gap closure in progress | — |
+| 6. Download UI and Error Handling | v1.1 | 4/5 | Gap closure in progress | — |

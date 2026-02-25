@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-02-21 after v1.1 started)
 
 Milestone v1.1 Direct Download — ROADMAP CREATED 2026-02-21
 Phase: 6 of 6 (Download UI and Error Handling)
-Plan: 3 of 3 complete
-Status: Phase 6 complete — gap-closure fix pending (error message text)
-Last activity: 2026-02-24 — Plan 06-03 complete
+Plan: 4 of 5 complete
+Status: Phase 6 gap-closure in progress — proxy server done, fetchCsv wiring pending
+Last activity: 2026-02-25 — Plan 06-04 complete
 
-Progress: [██████████] 100% (6/6 plans complete)
+Progress: [█████████░] 88% (7/8 plans complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [██████████] 100% (6/6 plans complete)
 | 3. Navigation and Interaction | 4/4 | Complete |
 | 4. Parameter Management | 4/4 | Complete |
 
-**v1.1 Plans Completed: 5/6**
+**v1.1 Plans Completed: 6/7**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
@@ -42,6 +42,7 @@ Progress: [██████████] 100% (6/6 plans complete)
 | 06-01 | Fetch Engine (fetchCsv + error helpers) | 8min | 2 | Complete |
 | 06-02 | Fetch Controls UI + Wiring | 1min | 2 | Complete |
 | 06-03 | Empirical Device Verification | 10min | 1 | Complete |
+| 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Key architectural decisions relevant to v1.1:
 - **showFetchControls() sets display='' (empty string)** — restores natural flow layout rather than hardcoding 'block' (06-02)
 - **OekoFEN heater confirmed to block CORS (empirical, 06-03)** — no Access-Control-Allow-Origin header returned; direct browser fetch() is impossible; the heater IS reachable (http://10.10.30.3:4321/ctT9/log_today opens in browser tab) but CORS is a server-side block
 - **Firefox does NOT bypass CORS (empirical, 06-03)** — both Chrome and Firefox enforce CORS identically; "try Firefox" advice in handleFetchNetworkError is wrong and needs a gap-closure fix
+- **Proxy server is now required startup method (06-04)** — server.py provides /proxy?url= endpoint; server-side urlopen bypasses CORS; binds to 127.0.0.1:8080; proxy timeout=15s > fetchCsv timeout=10s so browser-side abort fires first
+- **start.bat is the Windows double-click launcher (06-04)** — two-line bat file: @echo off + python server.py; replaces python -m http.server 8080
 
 ### Pending Todos
 
@@ -76,11 +79,11 @@ None.
 ### Blockers/Concerns
 
 - **[RESOLVED 2026-02-24] CORS header behavior of OekoFEN heater** — empirically confirmed: heater does NOT return Access-Control-Allow-Origin headers. Direct browser fetch() is permanently impossible without a CORS proxy or heater firmware update. The heater IS reachable via browser tab (CSV opens at http://10.10.30.3:4321/ctT9/log_today) — the block is strictly CORS. python -m http.server resolves file:// origin errors but NOT CORS from heater.
-- **[GAP] handleFetchNetworkError error message says "try Firefox"** — Firefox enforces CORS identically to Chrome; this advice is wrong. Fix: replace with instruction to open the heater URL directly in the browser for manual download. One-line fix in index.html.
+- **[RESOLVED 2026-02-25 via 06-04] handleFetchNetworkError error message** — proxy server now unblocks CORS permanently; 06-05 will wire fetchCsv to use /proxy and update error messages
 - **[RESOLVED as N/A 2026-02-24] Chrome 142 Local Network Access** — CORS block from heater occurs before LNA becomes relevant; LNA is not a separate concern given current architecture.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: Completed 06-03-PLAN.md (Empirical Device Verification) — Phase 6 complete; gap-closure fix pending
+Last session: 2026-02-25
+Stopped at: Completed 06-04-PLAN.md (Python Proxy Server) — server.py + start.bat created; fetchCsv wiring pending in 06-05
 Resume file: none
