@@ -1009,6 +1009,14 @@
       } catch (e) {
         console.warn('[saveSettings] localStorage write failed:', e.name);
       }
+      // Persist settings to server so it can call the heater API (e.g. /stats live data)
+      if (window.location.protocol !== 'file:' && _settings.ip && _settings.password) {
+        fetch('/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip: _settings.ip, port: _settings.port, password: _settings.password }),
+        }).catch(function() {});
+      }
       dismissOnboarding();
       // Update fetch controls visibility when settings change
       if (_settings.ip && _settings.password) {
@@ -3620,6 +3628,14 @@
     // Show fetch controls if heater settings were previously saved (v1.1 Phase 6)
     if (_settings.ip && _settings.password) {
       showFetchControls();
+      // Push existing localStorage settings to server on startup (so /stats live data works)
+      if (window.location.protocol !== 'file:') {
+        fetch('/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip: _settings.ip, port: _settings.port, password: _settings.password }),
+        }).catch(function() {});
+      }
     }
     // DACC-02: Initialize history indicator on page load
     updateHistoryIndicator();

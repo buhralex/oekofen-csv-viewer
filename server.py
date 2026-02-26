@@ -738,6 +738,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
             except Exception as exc:
                 self.send_error(500, f'POST /history error: {exc}')
+        elif parsed.path == '/settings':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                payload = json.loads(body.decode('utf-8'))
+                ip       = str(payload.get('ip', '')).strip()
+                port     = str(payload.get('port', '4321')).strip()
+                password = str(payload.get('password', '')).strip()
+                if not ip or not password:
+                    self.send_error(400, 'ip and password are required')
+                    return
+                settings_path = os.path.join(SCRIPT_DIR, 'settings.json')
+                with open(settings_path, 'w') as f:
+                    json.dump({'ip': ip, 'port': port, 'password': password}, f)
+                self.send_response(204)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+            except Exception as exc:
+                self.send_error(500, f'POST /settings error: {exc}')
         else:
             self.send_error(405, 'Method not allowed')
 
