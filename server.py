@@ -427,7 +427,7 @@ def fetch_live_api():
     url = f'http://{ip}:{port}/{password}/all?'
     try:
         with urllib.request.urlopen(url, timeout=5) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
+            data = json.loads(resp.read().decode('windows-1252'))
         pe1 = data.get('pe1', {})
         def _int(key):
             v = pe1.get(key, {}).get('val')
