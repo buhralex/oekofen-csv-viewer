@@ -304,7 +304,16 @@ def compute_and_store_stats(date):
     try:
         with open(csv_path, 'rb') as f:
             raw = f.read()
-        csv_string = raw.decode('windows-1252')
+        csv_string = None
+        for enc in ('windows-1252', 'utf-8', 'utf-8-sig'):
+            try:
+                csv_string = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        if csv_string is None:
+            print(f'[stats] Could not decode {date}.csv (tried windows-1252, utf-8)')
+            return False
     except Exception as exc:
         print(f'[stats] Could not read {date}.csv: {exc}')
         return False
@@ -481,6 +490,24 @@ def run_schedule(interval_minutes, settings):
         time.sleep(interval_secs)
 
 
+def _extract_date_from_log_url(url):
+    """Extract YYYYMMDD date from a heater log URL (log_today, log0, log1, etc.).
+    Returns date string or None if URL is not a recognizable log command.
+    """
+    path = urllib.parse.urlparse(url).path
+    command = path.rstrip('/').split('/')[-1].lower()
+    mapping = {
+        'log_today': 0, 'log0': 0,
+        'log_yesterday': 1, 'log1': 1,
+        'log2': 2,
+        'log3': 3,
+    }
+    delta = mapping.get(command)
+    if delta is not None:
+        return (datetime.date.today() - datetime.timedelta(days=delta)).strftime('%Y%m%d')
+    return None
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
@@ -563,6 +590,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 with urllib.request.urlopen(target_url, timeout=15) as resp:
                     data = resp.read()
+                # Auto-save to history/ if this is a recognised log command
+                log_date = _extract_date_from_log_url(target_url)
+                if log_date:
+                    try:
+                        os.makedirs(HISTORY_DIR, exist_ok=True)
+                        csv_path = os.path.join(HISTORY_DIR, f'{log_date}.csv')
+                        with open(csv_path, 'wb') as f:
+                            f.write(data)
+                        threading.Thread(
+                            target=compute_and_store_stats, args=(log_date,), daemon=True
+                        ).start()
+                    except Exception as save_exc:
+                        print(f'[proxy] Could not save {log_date}.csv: {save_exc}')
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Content-Type', 'text/plain; charset=windows-1252')
@@ -576,6 +616,37 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(502, f'Proxy error: {exc}')
         else:
             super().do_GET()
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/history':
+            params = urllib.parse.parse_qs(parsed.query)
+            date = params.get('date', [None])[0]
+            if not date or not re.match(r'^\d{8}$', date):
+                self.send_error(400, 'Missing or invalid date parameter')
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                os.makedirs(HISTORY_DIR, exist_ok=True)
+                csv_path = os.path.join(HISTORY_DIR, f'{date}.csv')
+                with open(csv_path, 'wb') as f:
+                    f.write(body)
+                compute_and_store_stats(date)
+                self.send_response(204)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+            except Exception as exc:
+                self.send_error(500, f'POST /history error: {exc}')
+        else:
+            self.send_error(405, 'Method not allowed')
 
     def log_message(self, fmt, *args):
         # Suppress per-request logs to keep terminal output clean

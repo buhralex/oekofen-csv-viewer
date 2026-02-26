@@ -3485,6 +3485,27 @@
         return;
       }
 
+      // Sync IndexedDB days to server (browser data the server may not have yet)
+      try {
+        const serverDatesArr = await fetch('/history', { signal: AbortSignal.timeout(3000) })
+          .then(function(r) { return r.ok ? r.json() : []; })
+          .catch(function() { return []; });
+        const serverSet = new Set(serverDatesArr);
+        const localDays = await getAllHistoryDays().catch(function() { return []; });
+        for (const day of localDays) {
+          if (!serverSet.has(day.date)) {
+            try {
+              await fetch('/history?date=' + day.date, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                body: day.csvString,
+                signal: AbortSignal.timeout(10000)
+              });
+            } catch (e) { /* ignore individual upload failures */ }
+          }
+        }
+      } catch (e) { /* ignore sync errors — stats will still show what server has */ }
+
       let statsData;
       try {
         const resp = await fetch('/stats', { signal: AbortSignal.timeout(5000) });
