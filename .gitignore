@@ -13,3 +13,6 @@ obj/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scheduled fetch data (runtime output, not source)
+history/
