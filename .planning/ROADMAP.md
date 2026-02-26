@@ -32,7 +32,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Milestone Goal:** Enable users to get actionable, AI-powered recommendations for pellet savings by analyzing multi-day usage data against their heater's baseline settings.
 
 - [x] **Phase 7: Data Accumulation** — IndexedDB storage for multi-day CSVs, history UI, clear action, and server-side auto-fetch schedule (complete 2026-02-26)
-- [ ] **Phase 8: Settings Baseline** — Load and parse the heater `.txt` settings export into structured sections
+- [x] **Phase 8: Settings Baseline** — Load and parse the heater `.txt` settings export into structured sections (complete 2026-02-26)
 - [ ] **Phase 9: Data Aggregation** — Compute per-day statistics and identify multi-day patterns from stored history
 - [ ] **Phase 10: AI Integration** — Configure AI backend, build structured context payload, and trigger analysis
 - [ ] **Phase 11: Analysis Panel** — Full-screen panel showing prioritized recommendations, maintenance alerts, and analysis metadata
@@ -103,7 +103,7 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Baseline data layer (parseBaselineTxt, localStorage, _baseline) + onboarding step 2 prompt
-- [ ] 08-02-PLAN.md — Settings modal baseline section (reload UX) + end-to-end human verification
+- [x] 08-02-PLAN.md — Settings modal baseline section (reload UX) + end-to-end human verification
 
 ### Phase 9: Data Aggregation
 **Goal**: The app derives actionable statistics from stored CSV history that characterize how the heater has been operating across multiple days
@@ -112,7 +112,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. For each stored day, the app has computed: number of burner starts, pellet consumption estimate, total burner runtime, average outdoor temperature, and average flow/return temperature delta
   2. Across all stored days, the app has identified: whether start frequency is trending up or down over the period, and consumption values normalized against outdoor temperature for fair day-to-day comparison
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — SQLite aggregation engine in server.py: detect_columns, compute_day_stats, daily_stats table, /stats endpoint, startup backfill, schedule hook
+- [ ] 09-02-PLAN.md — Statistics UI in index.html: Statistics button, #stats-panel, summary section, per-day table, row drill-down into chart
 
 ### Phase 10: AI Integration
 **Goal**: Users can configure an AI backend and trigger an analysis that sends only structured, aggregated context — never raw CSV rows — and receive a structured response
@@ -146,8 +150,8 @@ Plans:
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
 | 6. Download UI and Error Handling | v1.1 | 5/5 | Complete | 2026-02-25 |
-| 7. Data Accumulation | v1.2 | Complete    | 2026-02-26 | 2026-02-26 |
-| 8. Settings Baseline | v1.2 | 0/2 | Not started | - |
-| 9. Data Aggregation | v1.2 | 0/? | Not started | - |
+| 7. Data Accumulation | v1.2 | 3/3 | Complete | 2026-02-26 |
+| 8. Settings Baseline | v1.2 | 2/2 | Complete | 2026-02-26 |
+| 9. Data Aggregation | v1.2 | 0/2 | Not started | - |
 | 10. AI Integration | v1.2 | 0/? | Not started | - |
 | 11. Analysis Panel | v1.2 | 0/? | Not started | - |
