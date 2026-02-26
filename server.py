@@ -23,6 +23,8 @@ import argparse
 import datetime
 import http.server
 import json
+import re
+import sqlite3
 import time
 import urllib.error
 import urllib.request
@@ -35,6 +37,258 @@ HOST = '127.0.0.1'
 PORT = 8080
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 HISTORY_DIR = os.path.join(SCRIPT_DIR, 'history')
+STATS_DB_PATH = os.path.join(SCRIPT_DIR, 'stats.db')
+
+
+def open_stats_db():
+    """Open (or create) stats.db and ensure the daily_stats table exists.
+    Opens a fresh connection each call for thread-safety.
+    Returns the sqlite3 connection.
+    """
+    conn = sqlite3.connect(STATS_DB_PATH)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS daily_stats (
+            date TEXT PRIMARY KEY,
+            starts INTEGER,
+            runtime_minutes REAL,
+            pellet_kg REAL,
+            avg_outdoor_temp REAL,
+            flow_return_delta REAL,
+            degree_day_consumption REAL,
+            row_count INTEGER,
+            hours_covered REAL,
+            is_partial INTEGER,
+            computed_at INTEGER
+        )
+    ''')
+    conn.commit()
+    return conn
+
+
+def detect_columns(headers):
+    """Auto-detect meaningful column names from a CSV header list.
+
+    Returns a dict with keys:
+        'burner', 'runtime', 'pellet', 'outdoor_temp', 'flow_temp', 'return_temp'
+    Each value is the full header string that matched, or None.
+    """
+    detected = {
+        'burner': None,
+        'runtime': None,
+        'pellet': None,
+        'outdoor_temp': None,
+        'flow_temp': None,
+        'return_temp': None,
+    }
+    for h in headers:
+        name_part = h.split('[')[0].strip()
+        # burner: exact case-insensitive match on 'BR'
+        if detected['burner'] is None and name_part.lower() == 'br':
+            detected['burner'] = h
+        # runtime: exact case-insensitive match on 'L_runtime'
+        if detected['runtime'] is None and name_part.lower() == 'l_runtime':
+            detected['runtime'] = h
+        # pellet: PE1.*cnt, PE1.*verbrauch, PE1.*pellet, or L_pellet (case-insensitive)
+        if detected['pellet'] is None and re.search(
+            r'^PE1.*(cnt|verbrauch|pellet)|^L_pellet', name_part, re.IGNORECASE
+        ):
+            detected['pellet'] = h
+        # outdoor_temp: exact uppercase 'AT'
+        if detected['outdoor_temp'] is None and name_part == 'AT':
+            detected['outdoor_temp'] = h
+        # flow_temp: HK1.*VL (case-insensitive)
+        if detected['flow_temp'] is None and re.search(r'^HK1.*VL', name_part, re.IGNORECASE):
+            detected['flow_temp'] = h
+        # return_temp: HK1.*RT (case-insensitive)
+        if detected['return_temp'] is None and re.search(r'^HK1.*RT', name_part, re.IGNORECASE):
+            detected['return_temp'] = h
+    print(f'[stats] columns detected: {detected}')
+    return detected
+
+
+def parse_german_float(s):
+    """Parse a German-locale float string (comma as decimal separator).
+    Returns float on success, None on failure.
+    """
+    if s is None:
+        return None
+    try:
+        return float(str(s).replace(',', '.').strip())
+    except (ValueError, TypeError):
+        return None
+
+
+def compute_day_stats(csv_string, date):
+    """Compute per-day statistics from a CSV string (windows-1252 decoded).
+
+    Returns a dict with all daily_stats fields, or None on fatal error.
+    """
+    try:
+        lines = csv_string.splitlines()
+        # Find first non-empty line as header
+        header_line = None
+        header_idx = 0
+        for i, line in enumerate(lines):
+            if line.strip():
+                header_line = line
+                header_idx = i
+                break
+        if header_line is None:
+            print(f'[stats] {date}: no header line found')
+            return None
+
+        headers = [h.strip() for h in header_line.split(';')]
+        detected = detect_columns(headers)
+
+        # Map column names to indices
+        col_idx = {}
+        for col_name, col_header in detected.items():
+            if col_header is not None:
+                try:
+                    col_idx[col_name] = headers.index(col_header)
+                except ValueError:
+                    col_idx[col_name] = None
+            else:
+                col_idx[col_name] = None
+
+        # Parse all data rows (after header)
+        data_rows = []
+        for line in lines[header_idx + 1:]:
+            if line.strip():
+                data_rows.append(line.split(';'))
+
+        row_count = len(data_rows)
+
+        # Compute hours_covered from Datum/Zeit columns
+        hours_covered = 0.0
+        try:
+            datum_idx = headers.index('Datum') if 'Datum' in headers else None
+            # Try stripped version
+            if datum_idx is None:
+                for i, h in enumerate(headers):
+                    if h.strip() == 'Datum':
+                        datum_idx = i
+                        break
+            zeit_idx = None
+            for i, h in enumerate(headers):
+                if h.strip() == 'Zeit':
+                    zeit_idx = i
+                    break
+
+            if datum_idx is not None and zeit_idx is not None and len(data_rows) >= 2:
+                def parse_ts(row):
+                    d_str = row[datum_idx].strip() if datum_idx < len(row) else ''
+                    t_str = row[zeit_idx].strip() if zeit_idx < len(row) else ''
+                    dt = datetime.datetime.strptime(f'{d_str} {t_str}', '%d.%m.%Y %H:%M:%S')
+                    return dt.timestamp()
+                first_ts = parse_ts(data_rows[0])
+                last_ts = parse_ts(data_rows[-1])
+                hours_covered = (last_ts - first_ts) / 3600.0
+        except Exception as exc:
+            print(f'[stats] {date}: hours_covered parse error: {exc}')
+            hours_covered = 0.0
+
+        is_partial = 1 if hours_covered < 20 else 0
+
+        # Burner starts: count 0→1 transitions
+        starts = None
+        b_idx = col_idx.get('burner')
+        if b_idx is not None:
+            starts = 0
+            prev_val = None
+            for row in data_rows:
+                if b_idx >= len(row):
+                    continue
+                val = parse_german_float(row[b_idx])
+                if val is None:
+                    prev_val = None
+                    continue
+                if prev_val is not None and prev_val == 0.0 and val == 1.0:
+                    starts += 1
+                prev_val = val
+
+        # Runtime minutes: last - first value of runtime column
+        runtime_minutes = None
+        r_idx = col_idx.get('runtime')
+        if r_idx is not None and data_rows:
+            first_val = None
+            last_val = None
+            for row in data_rows:
+                if r_idx < len(row):
+                    v = parse_german_float(row[r_idx])
+                    if v is not None:
+                        if first_val is None:
+                            first_val = v
+                        last_val = v
+            if first_val is not None and last_val is not None:
+                runtime_minutes = max(0.0, last_val - first_val)
+
+        # Pellet kg: last - first value of pellet column
+        pellet_kg = None
+        p_idx = col_idx.get('pellet')
+        if p_idx is not None and data_rows:
+            first_val = None
+            last_val = None
+            for row in data_rows:
+                if p_idx < len(row):
+                    v = parse_german_float(row[p_idx])
+                    if v is not None:
+                        if first_val is None:
+                            first_val = v
+                        last_val = v
+            if first_val is not None and last_val is not None:
+                pellet_kg = max(0.0, last_val - first_val)
+
+        # Average outdoor temp
+        avg_outdoor_temp = None
+        o_idx = col_idx.get('outdoor_temp')
+        if o_idx is not None:
+            temps = []
+            for row in data_rows:
+                if o_idx < len(row):
+                    v = parse_german_float(row[o_idx])
+                    if v is not None:
+                        temps.append(v)
+            if temps:
+                avg_outdoor_temp = sum(temps) / len(temps)
+
+        # Flow/return delta
+        flow_return_delta = None
+        f_idx = col_idx.get('flow_temp')
+        ret_idx = col_idx.get('return_temp')
+        if f_idx is not None and ret_idx is not None:
+            deltas = []
+            for row in data_rows:
+                if f_idx < len(row) and ret_idx < len(row):
+                    fv = parse_german_float(row[f_idx])
+                    rv = parse_german_float(row[ret_idx])
+                    if fv is not None and rv is not None:
+                        deltas.append(fv - rv)
+            if deltas:
+                flow_return_delta = sum(deltas) / len(deltas)
+
+        # Degree-day consumption
+        degree_day_consumption = None
+        if (pellet_kg is not None and avg_outdoor_temp is not None
+                and avg_outdoor_temp < 18):
+            degree_day_consumption = pellet_kg / (18.0 - avg_outdoor_temp)
+
+        return {
+            'date': date,
+            'starts': starts,
+            'runtime_minutes': runtime_minutes,
+            'pellet_kg': pellet_kg,
+            'avg_outdoor_temp': avg_outdoor_temp,
+            'flow_return_delta': flow_return_delta,
+            'degree_day_consumption': degree_day_consumption,
+            'row_count': row_count,
+            'hours_covered': hours_covered,
+            'is_partial': is_partial,
+            'computed_at': int(time.time() * 1000),
+        }
+    except Exception as exc:
+        print(f'[stats] Warning: compute_day_stats failed for {date}: {exc}')
+        return None
 
 
 def load_schedule_settings():
