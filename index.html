@@ -3602,7 +3602,17 @@
     updateHistoryIndicator();
     // DACC-04: Import server-stored history (from server.py --schedule) silently on startup
     loadHistoryFromServer();
-    setStatus('Ready — drop an OekoFEN CSV file to begin');
+    // Auto-load most recent day from IndexedDB on startup (skip drop zone if history exists)
+    getAllHistoryDays().then(function(days) {
+      if (!days || days.length === 0) {
+        setStatus('Ready — drop an OekoFEN CSV file to begin');
+        return;
+      }
+      const latest = days[days.length - 1];
+      onCsvStringAccepted(latest.csvString, formatHistoryDate(latest.date) + '.csv', latest.date);
+    }).catch(function() {
+      setStatus('Ready — drop an OekoFEN CSV file to begin');
+    });
   </script>
 </body>
 </html>
