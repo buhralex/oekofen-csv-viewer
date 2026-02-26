@@ -74,8 +74,9 @@ def detect_columns(headers):
     """
     detected = {
         'burner': None,
-        'runtime': None,
-        'pellet': None,
+        'runtime': None,       # cumulative hours counter (last - first = daily runtime h)
+        'pellet': None,        # cumulative pellet counter (last - first = consumption kg)
+        'pellet_level': None,  # fill-level gauge (first - last = consumption kg)
         'outdoor_temp': None,
         'flow_temp': None,
         'return_temp': None,
@@ -85,14 +86,21 @@ def detect_columns(headers):
         # burner: exact case-insensitive match on 'BR'
         if detected['burner'] is None and name_part.lower() == 'br':
             detected['burner'] = h
-        # runtime: exact case-insensitive match on 'L_runtime'
-        if detected['runtime'] is None and name_part.lower() == 'l_runtime':
+        # runtime: L_runtime (generic) or PE1 Runtime (OekoFEN PE1 unit)
+        if detected['runtime'] is None and re.search(
+            r'^L_runtime$|^PE1\s+Runtime', name_part, re.IGNORECASE
+        ):
             detected['runtime'] = h
-        # pellet: PE1.*cnt, PE1.*verbrauch, PE1.*pellet, or L_pellet (case-insensitive)
+        # pellet cumulative counter: PE1.*cnt/verbrauch/pellet, or L_pellet
         if detected['pellet'] is None and re.search(
             r'^PE1.*(cnt|verbrauch|pellet)|^L_pellet', name_part, re.IGNORECASE
         ):
             detected['pellet'] = h
+        # pellet fill-level gauge: PE1 Fuellstand (decreases as pellets burn)
+        if detected['pellet_level'] is None and re.search(
+            r'^PE1\s+Fuellstand', name_part, re.IGNORECASE
+        ):
+            detected['pellet_level'] = h
         # outdoor_temp: exact uppercase 'AT'
         if detected['outdoor_temp'] is None and name_part == 'AT':
             detected['outdoor_temp'] = h
@@ -208,8 +216,11 @@ def compute_day_stats(csv_string, date):
                 prev_val = val
 
         # Runtime minutes: last - first value of runtime column
+        # PE1 Runtime[h] is in hours — multiply delta by 60 to get minutes
         runtime_minutes = None
         r_idx = col_idx.get('runtime')
+        r_header = detected.get('runtime', '')
+        runtime_in_hours = r_header is not None and re.search(r'\[h\]', r_header or '', re.IGNORECASE)
         if r_idx is not None and data_rows:
             first_val = None
             last_val = None
@@ -221,9 +232,10 @@ def compute_day_stats(csv_string, date):
                             first_val = v
                         last_val = v
             if first_val is not None and last_val is not None:
-                runtime_minutes = max(0.0, last_val - first_val)
+                delta = max(0.0, last_val - first_val)
+                runtime_minutes = delta * 60.0 if runtime_in_hours else delta
 
-        # Pellet kg: last - first value of pellet column
+        # Pellet kg: cumulative counter (last - first) or fill-level gauge (first - last)
         pellet_kg = None
         p_idx = col_idx.get('pellet')
         if p_idx is not None and data_rows:
@@ -238,6 +250,21 @@ def compute_day_stats(csv_string, date):
                         last_val = v
             if first_val is not None and last_val is not None:
                 pellet_kg = max(0.0, last_val - first_val)
+        # Fallback: fill-level gauge (first - last = consumption)
+        if pellet_kg is None:
+            pl_idx = col_idx.get('pellet_level')
+            if pl_idx is not None and data_rows:
+                first_val = None
+                last_val = None
+                for row in data_rows:
+                    if pl_idx < len(row):
+                        v = parse_german_float(row[pl_idx])
+                        if v is not None:
+                            if first_val is None:
+                                first_val = v
+                            last_val = v
+                if first_val is not None and last_val is not None:
+                    pellet_kg = max(0.0, first_val - last_val)
 
         # Average outdoor temp
         avg_outdoor_temp = None
