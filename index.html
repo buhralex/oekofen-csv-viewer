@@ -3533,13 +3533,36 @@
       const periodEnd   = formatHistoryDate(days[days.length - 1].date);
       const periodStr   = days.length === 1 ? periodStart : periodStart + ' \u2013 ' + periodEnd;
 
+      const live = statsData.live || {};
+
+      // Storage display: "1573 kg (23%)" with low-stock warning colour
+      let storageStr = '\u2014';
+      let storageStyle = '';
+      if (live.storage_kg !== null && live.storage_kg !== undefined) {
+        storageStr = live.storage_kg + ' kg';
+        if (live.storage_max) {
+          storageStr += ' (' + Math.round(live.storage_kg / live.storage_max * 100) + '%)';
+        }
+        if (live.storage_min !== null && live.storage_kg <= live.storage_min) {
+          storageStyle = 'color:var(--red,#ef4444);';
+        }
+      }
+
+      const daysRemainingStr = (live.days_remaining !== null && live.days_remaining !== undefined)
+        ? live.days_remaining + ' days' : '\u2014';
+      const avgRuntimeStr = (live.avg_runtime_min !== null && live.avg_runtime_min !== undefined)
+        ? live.avg_runtime_min + ' min' : '\u2014';
+
       const summaryHtml = '' +
         '<div class="stats-summary">' +
         '<div class="stats-summary-item"><span class="stats-summary-label">Period</span><span class="stats-summary-value" style="font-size:13px;">' + periodStr + '</span></div>' +
         '<div class="stats-summary-item"><span class="stats-summary-label">Days stored</span><span class="stats-summary-value">' + statsData.total_days + '</span></div>' +
         '<div class="stats-summary-item"><span class="stats-summary-label">Total starts</span><span class="stats-summary-value">' + totalStarts + '</span></div>' +
         '<div class="stats-summary-item"><span class="stats-summary-label">Total runtime</span><span class="stats-summary-value">' + runtimeHours + ' h</span></div>' +
+        '<div class="stats-summary-item"><span class="stats-summary-label">Avg run duration</span><span class="stats-summary-value">' + avgRuntimeStr + '</span></div>' +
         '<div class="stats-summary-item"><span class="stats-summary-label">Start trend</span><span class="stats-summary-value" style="font-size:14px;">' + trendLabel + '</span></div>' +
+        '<div class="stats-summary-item"><span class="stats-summary-label">Storage</span><span class="stats-summary-value" style="' + storageStyle + '">' + storageStr + '</span></div>' +
+        '<div class="stats-summary-item"><span class="stats-summary-label">Fuel remaining</span><span class="stats-summary-value">' + daysRemainingStr + '</span></div>' +
         '</div>';
 
       // Per-day table

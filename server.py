@@ -407,29 +407,43 @@ def backfill_stats():
     print(f'[stats] Backfill complete — {n} new days computed')
 
 
-def fetch_live_pellets():
-    """Fetch today's and yesterday's pellet consumption from heater /all? endpoint.
-    Returns dict: {'today': kg or None, 'yesterday': kg or None}
+def fetch_live_api():
+    """Fetch live data from heater /all? endpoint.
+
+    Returns dict with pellet consumption, storage levels, and avg runtime.
+    All values are None when the heater is unreachable or settings missing.
     """
     settings = load_schedule_settings()
     ip       = settings.get('ip', '')
     port     = settings.get('port', '4321')
     password = settings.get('password', '')
+    empty = {
+        'pellets_today': None, 'pellets_yesterday': None,
+        'storage_kg': None, 'storage_min': None, 'storage_max': None,
+        'storage_hopper_kg': None, 'avg_runtime_min': None,
+    }
     if not ip or not password:
-        return {'today': None, 'yesterday': None}
+        return empty
     url = f'http://{ip}:{port}/{password}/all?'
     try:
         with urllib.request.urlopen(url, timeout=5) as resp:
             data = json.loads(resp.read().decode('utf-8'))
         pe1 = data.get('pe1', {})
-        def _kg(key):
-            entry = pe1.get(key, {})
-            v = entry.get('val')
+        def _int(key):
+            v = pe1.get(key, {}).get('val')
             return int(v) if v is not None else None
-        return {'today': _kg('L_pellets_today'), 'yesterday': _kg('L_pellets_yesterday')}
+        return {
+            'pellets_today':    _int('L_pellets_today'),
+            'pellets_yesterday':_int('L_pellets_yesterday'),
+            'storage_kg':       _int('L_storage_fill'),
+            'storage_min':      _int('L_storage_min'),
+            'storage_max':      _int('L_storage_max'),
+            'storage_hopper_kg':_int('L_storage_hopper'),
+            'avg_runtime_min':  _int('L_avg_runtime'),
+        }
     except Exception as exc:
-        print(f'[stats] Could not fetch live pellets: {exc}')
-        return {'today': None, 'yesterday': None}
+        print(f'[stats] Could not fetch live API data: {exc}')
+        return empty
 
 
 def get_all_stats():
@@ -448,15 +462,15 @@ def get_all_stats():
         print(f'[stats] get_all_stats DB error: {exc}')
         rows = []
 
-    # Overlay live pellet consumption from heater API for today and yesterday
-    live = fetch_live_pellets()
+    # Overlay live data from heater API
+    live = fetch_live_api()
     today_str     = datetime.date.today().strftime('%Y%m%d')
     yesterday_str = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
     for row in rows:
-        if row['date'] == today_str and live['today'] is not None:
-            row['pellet_kg'] = live['today']
-        elif row['date'] == yesterday_str and live['yesterday'] is not None:
-            row['pellet_kg'] = live['yesterday']
+        if row['date'] == today_str and live['pellets_today'] is not None:
+            row['pellet_kg'] = live['pellets_today']
+        elif row['date'] == yesterday_str and live['pellets_yesterday'] is not None:
+            row['pellet_kg'] = live['pellets_yesterday']
 
     total_days = len(rows)
     complete_days_data = [r for r in rows if r.get('is_partial') == 0 and r.get('starts') is not None]
@@ -490,11 +504,28 @@ def get_all_stats():
             label = '\u2192 stable'
         trend = {'direction': direction, 'slope': slope, 'label': label}
 
+    # Days of fuel remaining = storage / avg daily consumption (last 7 complete days)
+    days_remaining = None
+    if live['storage_kg'] is not None:
+        recent = [r['pellet_kg'] for r in complete_days_data[-7:]
+                  if r.get('pellet_kg') is not None and r['pellet_kg'] > 0]
+        if recent:
+            avg_consumption = sum(recent) / len(recent)
+            days_remaining = round(live['storage_kg'] / avg_consumption, 1)
+
     return {
         'days': rows,
         'trend': trend,
         'total_days': total_days,
         'complete_days': complete_days,
+        'live': {
+            'storage_kg':        live['storage_kg'],
+            'storage_min':       live['storage_min'],
+            'storage_max':       live['storage_max'],
+            'storage_hopper_kg': live['storage_hopper_kg'],
+            'avg_runtime_min':   live['avg_runtime_min'],
+            'days_remaining':    days_remaining,
+        },
     }
 
 
