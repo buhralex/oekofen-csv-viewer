@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 8 — Settings Baseline (v1.2 AI Heater Analysis)
+**Current focus:** Phase 9 — Data Aggregation (v1.2 AI Heater Analysis)
 
 ## Current Position
 
-Phase: 8 — Settings Baseline
-Plan: 02 complete (08-02-SUMMARY.md)
-Status: Complete — 2 of 2 plans complete
-Last activity: 2026-02-26 — 08-02 Settings modal baseline section + end-to-end verification complete
+Phase: 9 — Data Aggregation
+Plan: 00 (planning complete — 2 plans ready)
+Status: Ready to execute — 0 of 2 plans complete
+Last activity: 2026-02-26 — Phase 9 plans created (09-01 aggregation engine, 09-02 statistics UI)
 
-Progress: [████████░░] 70%
+Progress: [████████░░] 72%
 
 ## Performance Metrics
 
@@ -119,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 08-02-PLAN.md — Settings modal baseline section + Load Settings File button; all BASE requirements verified end-to-end; Phase 8 complete
+Stopped at: Phase 9 plans created and verified — 09-01 (SQLite aggregation engine) + 09-02 (Statistics UI). Ready to execute.
 Resume file: none
