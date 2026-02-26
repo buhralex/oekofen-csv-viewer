@@ -31,7 +31,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Enable users to get actionable, AI-powered recommendations for pellet savings by analyzing multi-day usage data against their heater's baseline settings.
 
-- [ ] **Phase 7: Data Accumulation** — IndexedDB storage for multi-day CSVs, history UI, clear action, and server-side auto-fetch schedule
+- [x] **Phase 7: Data Accumulation** — IndexedDB storage for multi-day CSVs, history UI, clear action, and server-side auto-fetch schedule (complete 2026-02-26)
 - [ ] **Phase 8: Settings Baseline** — Load and parse the heater `.txt` settings export into structured sections
 - [ ] **Phase 9: Data Aggregation** — Compute per-day statistics and identify multi-day patterns from stored history
 - [ ] **Phase 10: AI Integration** — Configure AI backend, build structured context payload, and trigger analysis
@@ -89,7 +89,7 @@ Plans:
 Plans:
 - [x] 07-01-PLAN.md — IndexedDB storage layer (openHistoryDb, upsertHistoryDay, getAllHistoryDays, clearHistoryDb) + pipeline wiring in onCsvStringAccepted() + history indicator UI with Clear button
 - [x] 07-02-PLAN.md — server.py --schedule flag + background fetch thread + ./history/ disk storage + /history JSON endpoint + /history/YYYYMMDD.csv serve endpoint
-- [ ] 07-03-PLAN.md — Browser loadHistoryFromServer() on startup + end-to-end human verification of all four DACC requirements
+- [x] 07-03-PLAN.md — Browser loadHistoryFromServer() on startup + end-to-end human verification of all four DACC requirements
 
 ### Phase 8: Settings Baseline
 **Goal**: Users can load their heater's configuration as a one-time baseline and reload it when they change settings on the device
@@ -142,7 +142,7 @@ Plans:
 | 4. Parameter Management | v1.0 | 4/4 | Complete | 2026-02-21 |
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
 | 6. Download UI and Error Handling | v1.1 | 5/5 | Complete | 2026-02-25 |
-| 7. Data Accumulation | 2/3 | In Progress | - | - |
+| 7. Data Accumulation | v1.2 | 3/3 | Complete | 2026-02-26 |
 | 8. Settings Baseline | v1.2 | 0/? | Not started | - |
 | 9. Data Aggregation | v1.2 | 0/? | Not started | - |
 | 10. AI Integration | v1.2 | 0/? | Not started | - |

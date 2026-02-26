@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 7 — Data Accumulation
-Plan: 02 complete (07-02-SUMMARY.md)
-Status: In progress — 2 of 3 plans complete
-Last activity: 2026-02-25 — 07-02 server.py --schedule flag + history endpoints complete
+Plan: 03 complete (07-03-SUMMARY.md)
+Status: Complete — 3 of 3 plans complete
+Last activity: 2026-02-26 — 07-03 loadHistoryFromServer() + Phase 7 end-to-end verification complete
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -44,12 +44,13 @@ Progress: [██░░░░░░░░] 20%
 | 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
 | 06-05 | fetchCsv Proxy Wiring + Error Messages | —min | 2 | Complete |
 
-**v1.2 Plans Completed: 2/?**
+**v1.2 Plans Completed: 3/?**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
 | 07-01 | IndexedDB History Storage + Indicator | 2min | 2 | Complete |
 | 07-02 | Scheduled Auto-Fetch + /history Endpoints | 9min | 2 | Complete |
+| 07-03 | loadHistoryFromServer() Startup Wiring | 5min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Key architectural decisions relevant to v1.2:
 - [Phase 07-data-accumulation]: parseDateFromCsvString() added as fallback for log_yesterday/log0-log3 commands where command name yields no reliable date
 - [Phase 07-data-accumulation]: History indicator Clear button rendered inline by updateHistoryIndicator() — no permanent empty button when history is empty
 - [Phase 07-data-accumulation]: /history/* non-csv requests return 404 to prevent path traversal fallthrough to SimpleHTTPRequestHandler which normalizes ../ paths
+- [Phase 07-data-accumulation]: loadHistoryFromServer() called without await at startup — fire-and-forget; does not delay page render; updates indicator internally after import
+- [Phase 07-data-accumulation]: file:// protocol guard in loadHistoryFromServer() — no-op when opened as local file to prevent fetch console errors
+- [Phase 07-data-accumulation]: 3s timeout on /history, 5s on individual CSV fetches — ensures clean fallthrough when server.py is old version without /history endpoint
 
 ### Pending Todos
 
@@ -106,6 +110,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: Completed 07-02-PLAN.md — server.py --schedule flag, background thread, disk storage, /history endpoints; ready for 07-03
+Last session: 2026-02-26
+Stopped at: Completed 07-03-PLAN.md — loadHistoryFromServer() startup wiring, Phase 7 end-to-end human verification; Phase 7 Data Accumulation complete
 Resume file: none
