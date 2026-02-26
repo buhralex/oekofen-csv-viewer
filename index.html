@@ -847,6 +847,11 @@
     .stats-table tr.stats-row:hover td { background: var(--bg-l2); color: var(--text-1); }
     .stats-partial-badge { font-size: 10px; color: var(--text-3); margin-left: 4px; }
     .stats-empty { padding: 40px 0; text-align: center; color: var(--text-3); font-size: 14px; }
+
+    /* Phase 9: Statistics nav button */
+    #stats-btn { padding: 4px 12px; background: transparent; color: var(--text-2); border: 1px solid var(--sep-strong); border-radius: var(--r-pill); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: color 0.15s, border-color 0.15s, background 0.15s; }
+    #stats-btn:hover { color: var(--text-1); border-color: var(--text-3); background: var(--bg-l2); }
+    #stats-btn.active { background: var(--blue-dim); color: var(--blue); border-color: rgba(37, 99, 235, 0.25); }
   </style>
 </head>
 <body>
@@ -913,6 +918,7 @@
     <span id="header-filename"></span>
     <div style="display:flex; align-items:center; gap:8px;">
       <button id="settings-btn" title="Heater Settings" style="background:none; border:none; cursor:pointer; color:var(--text-2); padding:4px 6px; border-radius:var(--r-sm); display:flex; align-items:center; font-size:18px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='var(--text-1)'" onmouseout="this.style.color='var(--text-2)'">&#9881;</button>
+      <button id="stats-btn" title="Statistics">Statistics</button>
       <button id="load-another-btn">Load Another</button>
     </div>
   </header>
@@ -1341,6 +1347,10 @@
     }
 
     function showAppView(filename) {
+      // Phase 9: auto-hide stats panel when a new CSV loads
+      document.getElementById('stats-panel').style.display = 'none';
+      const statsBtn = document.getElementById('stats-btn');
+      if (statsBtn) statsBtn.classList.remove('active');
       document.getElementById('drop-zone').style.display = 'none';
       document.getElementById('app-header').classList.add('visible');
       document.getElementById('data-summary').classList.add('visible');
@@ -1349,6 +1359,31 @@
       document.getElementById('minimap-area').classList.add('visible');
       document.getElementById('header-filename').innerHTML =
         'File: <strong>' + filename + '</strong>';
+    }
+
+    // Phase 9: Toggle between stats panel view and chart view
+    function showStatsPanel(show) {
+      const statsPanel = document.getElementById('stats-panel');
+      const chartArea   = document.getElementById('chart-area');
+      const minimapArea = document.getElementById('minimap-area');
+      const toolbarRow  = document.getElementById('toolbar-row');
+      const dataSummary = document.getElementById('data-summary');
+      const statsBtn    = document.getElementById('stats-btn');
+      if (show) {
+        statsPanel.style.display = 'block';
+        chartArea.classList.remove('visible');
+        minimapArea.classList.remove('visible');
+        toolbarRow.classList.remove('visible');
+        dataSummary.classList.remove('visible');
+        if (statsBtn) statsBtn.classList.add('active');
+      } else {
+        statsPanel.style.display = 'none';
+        chartArea.classList.add('visible');
+        minimapArea.classList.add('visible');
+        toolbarRow.classList.add('visible');
+        dataSummary.classList.add('visible');
+        if (statsBtn) statsBtn.classList.remove('active');
+      }
     }
 
     // ─── Navigation guard ─────────────────────────────────────────
@@ -3262,6 +3297,18 @@
 
     const settingsBtnDrop = document.getElementById('settings-btn-drop');
     if (settingsBtnDrop) settingsBtnDrop.addEventListener('click', openSettingsModal);
+
+    // ─── Statistics button wiring (v1.2 Phase 9) ──────────────────
+    document.getElementById('stats-btn').addEventListener('click', async function() {
+      const panel = document.getElementById('stats-panel');
+      const isShowing = panel.style.display !== 'none';
+      if (isShowing) {
+        showStatsPanel(false);
+      } else {
+        showStatsPanel(true);
+        await loadStatsPanel();
+      }
+    });
 
     // ─── Fetch button wiring (v1.1 Phase 6) ──────────────────────
     const fetchBtn = document.getElementById('fetch-btn');
