@@ -860,6 +860,17 @@
         <button id="onboarding-connect-btn" style="background:var(--blue); color:#fff; border:none; border-radius:var(--r-sm); padding:7px 16px; font-size:13px; font-family:var(--font); cursor:pointer; font-weight:500;">Connect to heater</button>
         <button id="onboarding-dismiss-btn" style="background:none; border:none; color:var(--text-3); font-size:12px; cursor:pointer; margin-top:8px; display:block; width:100%; font-family:var(--font);">No thanks, I'll use file drop</button>
       </div>
+      <!-- Baseline prompt (v1.2 Phase 8) — shown after settings are saved for the first time -->
+      <div id="baseline-prompt" style="display:none; margin-top:14px; padding:14px 18px; background:var(--bg-l1); border:1px solid var(--sep-strong); border-radius:var(--r-md); text-align:center; max-width:320px;">
+        <p style="font-size:13px; color:var(--text-2); margin-bottom:4px; font-weight:500;">Load heater settings file</p>
+        <p style="font-size:12px; color:var(--text-3); margin-bottom:10px;">Upload your heater's .txt settings export to enable AI analysis.</p>
+        <label id="baseline-upload-label" style="display:inline-block; background:var(--blue); color:#fff; border-radius:var(--r-sm); padding:7px 16px; font-size:13px; font-family:var(--font); cursor:pointer; font-weight:500;">
+          Choose .txt file
+          <input type="file" id="baseline-file-input" accept=".txt" style="display:none">
+        </label>
+        <button id="baseline-skip-btn" style="background:none; border:none; color:var(--text-3); font-size:12px; cursor:pointer; margin-top:8px; display:block; width:100%; font-family:var(--font);">Skip for now</button>
+        <div id="baseline-prompt-status" style="margin-top:8px; font-size:12px; min-height:16px;"></div>
+      </div>
       <button id="settings-btn-drop" title="Heater Settings" style="margin-top:12px; background:none; border:1px solid var(--sep-strong); border-radius:var(--r-sm); cursor:pointer; color:var(--text-3); padding:5px 12px; font-size:12px; font-family:var(--font); display:inline-flex; align-items:center; gap:5px; transition:color 0.15s, border-color 0.15s;">
         <span style="font-size:14px;">&#9881;</span> Heater Settings
       </button>
@@ -1022,6 +1033,57 @@
         dismissBtn.addEventListener('click', () => {
           dismissOnboarding();
         });
+      }
+    }
+
+    // ─── Baseline prompt UI (v1.2 Phase 8) ────────────────────────
+
+    function showBaselinePrompt() {
+      const el = document.getElementById('baseline-prompt');
+      if (el) el.style.display = '';
+    }
+
+    function hideBaselinePrompt() {
+      const el = document.getElementById('baseline-prompt');
+      if (el) el.style.display = 'none';
+    }
+
+    function initBaselinePrompt() {
+      const fileInput = document.getElementById('baseline-file-input');
+      const statusEl = document.getElementById('baseline-prompt-status');
+      const skipBtn = document.getElementById('baseline-skip-btn');
+
+      if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const parsed = parseBaselineTxt(ev.target.result);
+              parsed.filename = file.name;
+              saveBaseline(parsed);
+              if (statusEl) {
+                statusEl.style.color = 'var(--text-2)';
+                statusEl.textContent = '\u2713 Loaded: ' + file.name + ' (' + parsed.sectionCount + ' sections)';
+              }
+              // Auto-hide after 1.5s on success
+              setTimeout(() => hideBaselinePrompt(), 1500);
+            } catch (err) {
+              if (statusEl) {
+                statusEl.style.color = '#DC2626';
+                statusEl.textContent = err.message;
+              }
+              // Reset file input so same file can be retried
+              fileInput.value = '';
+            }
+          };
+          reader.readAsText(file, 'utf-8');
+        });
+      }
+
+      if (skipBtn) {
+        skipBtn.addEventListener('click', () => hideBaselinePrompt());
       }
     }
 
@@ -2947,6 +3009,10 @@
         saveSettings(ip, port, pass);
         closeSettingsModal();
         showToast('Settings saved.', 'info', 2000);
+        // BASE-01: if this is the first time settings are saved, prompt for baseline
+        if (!_baseline) {
+          showBaselinePrompt();
+        }
       });
 
       footer.appendChild(cancelBtn);
@@ -3285,6 +3351,7 @@
     loadSettings();
     loadBaseline();   // BASE-01/02: load stored baseline on startup
     initOnboardingPrompt();
+    initBaselinePrompt();
     // Show fetch controls if heater settings were previously saved (v1.1 Phase 6)
     if (_settings.ip && _settings.password) {
       showFetchControls();
