@@ -407,6 +407,31 @@ def backfill_stats():
     print(f'[stats] Backfill complete — {n} new days computed')
 
 
+def fetch_live_pellets():
+    """Fetch today's and yesterday's pellet consumption from heater /all? endpoint.
+    Returns dict: {'today': kg or None, 'yesterday': kg or None}
+    """
+    settings = load_schedule_settings()
+    ip       = settings.get('ip', '')
+    port     = settings.get('port', '4321')
+    password = settings.get('password', '')
+    if not ip or not password:
+        return {'today': None, 'yesterday': None}
+    url = f'http://{ip}:{port}/{password}/all?'
+    try:
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        pe1 = data.get('pe1', {})
+        def _kg(key):
+            entry = pe1.get(key, {})
+            v = entry.get('val')
+            return int(v) if v is not None else None
+        return {'today': _kg('L_pellets_today'), 'yesterday': _kg('L_pellets_yesterday')}
+    except Exception as exc:
+        print(f'[stats] Could not fetch live pellets: {exc}')
+        return {'today': None, 'yesterday': None}
+
+
 def get_all_stats():
     """Retrieve all daily stats from stats.db and compute multi-day trend.
 
@@ -422,6 +447,16 @@ def get_all_stats():
     except Exception as exc:
         print(f'[stats] get_all_stats DB error: {exc}')
         rows = []
+
+    # Overlay live pellet consumption from heater API for today and yesterday
+    live = fetch_live_pellets()
+    today_str     = datetime.date.today().strftime('%Y%m%d')
+    yesterday_str = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
+    for row in rows:
+        if row['date'] == today_str and live['today'] is not None:
+            row['pellet_kg'] = live['today']
+        elif row['date'] == yesterday_str and live['yesterday'] is not None:
+            row['pellet_kg'] = live['yesterday']
 
     total_days = len(rows)
     complete_days_data = [r for r in rows if r.get('is_partial') == 0 and r.get('starts') is not None]
