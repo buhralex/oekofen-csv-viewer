@@ -114,8 +114,8 @@
 | DACC-02 | Phase 7 | Complete |
 | DACC-03 | Phase 7 | Complete |
 | DACC-04 | Phase 7 | Complete |
-| BASE-01 | Phase 8 | Pending |
-| BASE-02 | Phase 8 | Pending |
+| BASE-01 | Phase 8 | Complete |
+| BASE-02 | Phase 8 | Complete |
 | BASE-03 | Phase 8 | Complete |
 | AGGR-01 | Phase 9 | Pending |
 | AGGR-02 | Phase 9 | Pending |
