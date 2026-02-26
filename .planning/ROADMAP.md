@@ -102,7 +102,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Baseline data layer (parseBaselineTxt, localStorage, _baseline) + onboarding step 2 prompt
+- [x] 08-01-PLAN.md — Baseline data layer (parseBaselineTxt, localStorage, _baseline) + onboarding step 2 prompt
 - [ ] 08-02-PLAN.md — Settings modal baseline section (reload UX) + end-to-end human verification
 
 ### Phase 9: Data Aggregation

@@ -44,9 +44,9 @@
 
 ### Settings Baseline (BASE)
 
-- [ ] **BASE-01**: User can load the heater settings `.txt` export (drag-drop or file picker) as a one-time baseline
-- [ ] **BASE-02**: App parses the settings text into structured key-value pairs by section (Heizkreis, Warmwasser, CONDENS, etc.)
-- [ ] **BASE-03**: User can reload settings at any time after changing them on the heater
+- [x] **BASE-01**: User can load the heater settings `.txt` export (drag-drop or file picker) as a one-time baseline
+- [x] **BASE-02**: App parses the settings text into structured key-value pairs by section (Heizkreis, Warmwasser, CONDENS, etc.)
+- [x] **BASE-03**: User can reload settings at any time after changing them on the heater
 
 ### Data Aggregation (AGGR)
 
@@ -116,7 +116,7 @@
 | DACC-04 | Phase 7 | Complete |
 | BASE-01 | Phase 8 | Pending |
 | BASE-02 | Phase 8 | Pending |
-| BASE-03 | Phase 8 | Pending |
+| BASE-03 | Phase 8 | Complete |
 | AGGR-01 | Phase 9 | Pending |
 | AGGR-02 | Phase 9 | Pending |
 | AICO-01 | Phase 10 | Pending |

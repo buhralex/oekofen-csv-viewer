@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 
 **Core value:** Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
-**Current focus:** Phase 7 — Data Accumulation (v1.2 AI Heater Analysis)
+**Current focus:** Phase 8 — Settings Baseline (v1.2 AI Heater Analysis)
 
 ## Current Position
 
-Phase: 7 — Data Accumulation
-Plan: 03 complete (07-03-SUMMARY.md)
-Status: Complete — 3 of 3 plans complete
-Last activity: 2026-02-26 — 07-03 loadHistoryFromServer() + Phase 7 end-to-end verification complete
+Phase: 8 — Settings Baseline
+Plan: 02 complete (08-02-SUMMARY.md)
+Status: Complete — 2 of 2 plans complete
+Last activity: 2026-02-26 — 08-02 Settings modal baseline section + end-to-end verification complete
 
-Progress: [███░░░░░░░] 30%
+Progress: [████████░░] 70%
 
 ## Performance Metrics
 
@@ -44,13 +44,15 @@ Progress: [███░░░░░░░] 30%
 | 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
 | 06-05 | fetchCsv Proxy Wiring + Error Messages | —min | 2 | Complete |
 
-**v1.2 Plans Completed: 3/?**
+**v1.2 Plans Completed: 4/?**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
 | 07-01 | IndexedDB History Storage + Indicator | 2min | 2 | Complete |
 | 07-02 | Scheduled Auto-Fetch + /history Endpoints | 9min | 2 | Complete |
 | 07-03 | loadHistoryFromServer() Startup Wiring | 5min | 2 | Complete |
+| 08-01 | Baseline Data Layer + Onboarding Step 2 | 2min | 2 | Complete |
+| 08-02 | Settings Modal Baseline Section + Verification | ~10min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -97,6 +99,12 @@ Key architectural decisions relevant to v1.2:
 - [Phase 07-data-accumulation]: loadHistoryFromServer() called without await at startup — fire-and-forget; does not delay page render; updates indicator internally after import
 - [Phase 07-data-accumulation]: file:// protocol guard in loadHistoryFromServer() — no-op when opened as local file to prevent fetch console errors
 - [Phase 07-data-accumulation]: 3s timeout on /history, 5s on individual CSV fetches — ensures clean fallthrough when server.py is old version without /history endpoint
+- [Phase 08-settings-baseline]: BASELINE_KEY='oekofen-viewer-baseline', _baseline=null until .txt loaded; mirrors _settings localStorage pattern
+- [Phase 08-settings-baseline]: parseBaselineTxt() indent-aware stack-based parser — sub-section settings path-qualified with ' / ' separator (e.g. "Solares Heizen / Einschalttemperatur")
+- [Phase 08-settings-baseline]: baseline-prompt shown only when _baseline is null after settings save — never auto-shown on startup; returning users never see it unless _baseline is cleared
+- [Phase 08-settings-baseline]: Parse failure leaves _baseline and localStorage unchanged; inline error shown (not toast); file input reset so same file can be retried
+- [Phase 08-settings-baseline]: Settings modal status line reads _baseline at modal-open time; updates live within open modal on successful reload — no modal reopen required
+- [Phase 08-settings-baseline]: All three BASE requirements (BASE-01, BASE-02, BASE-03) verified end-to-end by user — Phase 8 complete
 
 ### Pending Todos
 
@@ -111,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 07-03-PLAN.md — loadHistoryFromServer() startup wiring, Phase 7 end-to-end human verification; Phase 7 Data Accumulation complete
+Stopped at: Completed 08-02-PLAN.md — Settings modal baseline section + Load Settings File button; all BASE requirements verified end-to-end; Phase 8 complete
 Resume file: none
