@@ -938,6 +938,10 @@
     const SETTINGS_KEY = 'oekofen-viewer-settings';
     const _settings = { ip: '', port: '4321', password: '' };
 
+    // ─── Baseline (v1.2 Phase 8) ──────────────────────────────────
+    const BASELINE_KEY = 'oekofen-viewer-baseline';
+    let _baseline = null;  // null until a .txt file is successfully loaded
+
     // ─── Fetch state (v1.1 Phase 6) ───────────────────────────
     let _lastFetchAt = 0;       // Unix ms timestamp when last fetch started (rate-limit guard)
     let _rateLimitTimer = null; // setTimeout handle for re-enabling the download button
@@ -1019,6 +1023,196 @@
           dismissOnboarding();
         });
       }
+    }
+
+    // ─── Baseline load/save/parse (v1.2 Phase 8) ──────────────────
+
+    function loadBaseline() {
+      try {
+        const raw = localStorage.getItem(BASELINE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && parsed.sections) {
+          _baseline = parsed;
+        }
+      } catch (e) {
+        console.warn('[loadBaseline] failed:', e.name);
+      }
+    }
+
+    function saveBaseline(parsed) {
+      _baseline = parsed;
+      try {
+        localStorage.setItem(BASELINE_KEY, JSON.stringify(parsed));
+      } catch (e) {
+        console.warn('[saveBaseline] localStorage write failed:', e.name);
+      }
+    }
+
+    function parseBaselineTxt(rawText) {
+      // Returns { filename: null, sectionCount, sections: { name: { settings, schedules } } }
+      // Throws Error with descriptive message if zero top-level sections detected.
+      const lines = rawText.split(/\r?\n/);
+      const sections = {};
+      let sectionCount = 0;
+
+      let currentSection = null;   // key into sections{}
+      let subStack = [];           // [ { name, indent } ] — path of sub-section labels
+      let currentSchedule = null;  // { name, groups }
+      let currentGroup = null;     // { days, blocks }
+
+      // Options accumulation state
+      let optionsPending = false;  // true while inside a multi-line [ ... ]
+      let optionsAccum = '';       // accumulated raw text for current options list
+      let lastSettingRef = null;   // reference to the last settings entry (to attach options)
+
+      function indentOf(rawLine) {
+        let i = 0;
+        while (i < rawLine.length && (rawLine[i] === ' ' || rawLine[i] === '\t')) i++;
+        return i;
+      }
+
+      function flushOptions() {
+        if (!lastSettingRef) return;
+        // Parse "[A, B, C]" → ["A", "B", "C"]
+        const inner = optionsAccum.replace(/^\[/, '').replace(/\].*$/, '').trim();
+        lastSettingRef.options = inner.split(',').map(s => s.trim()).filter(Boolean);
+        lastSettingRef = null;
+        optionsPending = false;
+        optionsAccum = '';
+      }
+
+      function subPath(extraLabel) {
+        const parts = subStack.map(e => e.name);
+        if (extraLabel) parts.push(extraLabel);
+        return parts.join(' / ');
+      }
+
+      function ensureSection(name) {
+        if (!sections[name]) {
+          sections[name] = { settings: [], schedules: [] };
+          sectionCount++;
+        }
+      }
+
+      for (const rawLine of lines) {
+        const trimmed = rawLine.trimEnd();
+        const content = trimmed.trim();
+        if (!content) continue;
+
+        const indent = indentOf(trimmed);
+
+        // ── Options continuation ────────────────────────────────────────
+        if (optionsPending) {
+          optionsAccum += ' ' + content;
+          if (content.includes(']')) flushOptions();
+          continue;
+        }
+
+        // ── Separator line (10+ dashes) ─────────────────────────────────
+        if (/^-{10,}/.test(content)) {
+          subStack = [];
+          currentSchedule = null;
+          currentGroup = null;
+          continue;
+        }
+
+        // ── File header (Anlagennummer at indent 0) ─────────────────────
+        if (indent === 0 && /^Anlagennummer\b/.test(content)) continue;
+
+        // ── Top-level section header (indent 0, not a separator) ────────
+        if (indent === 0) {
+          currentSection = content;
+          ensureSection(currentSection);
+          subStack = [];
+          currentSchedule = null;
+          currentGroup = null;
+          continue;
+        }
+
+        if (!currentSection) continue;
+
+        // ── Tag: line ───────────────────────────────────────────────────
+        const tagMatch = content.match(/^Tag:\s+(.+)/);
+        if (tagMatch) {
+          const days = tagMatch[1].split(/,\s*/).map(d => d.trim()).filter(Boolean);
+          currentGroup = { days, blocks: [] };
+          if (currentSchedule) currentSchedule.groups.push(currentGroup);
+          continue;
+        }
+
+        // ── Time block line ─────────────────────────────────────────────
+        const timeMatch = content.match(/^(\d{2}:\d{2})\s{2,}(\d{2}:\d{2})(?:\s{2,}(.+))?$/);
+        if (timeMatch) {
+          const block = {
+            from: timeMatch[1],
+            to: timeMatch[2],
+            mode: timeMatch[3] ? timeMatch[3].trim() : null
+          };
+          if (currentGroup) {
+            currentGroup.blocks.push(block);
+          } else if (currentSchedule) {
+            // time blocks before any Tag: line — create an unnamed group
+            currentGroup = { days: [], blocks: [block] };
+            currentSchedule.groups.push(currentGroup);
+          }
+          continue;
+        }
+
+        // ── Adjust sub-section stack for unindent ───────────────────────
+        while (subStack.length > 0 && indent <= subStack[subStack.length - 1].indent) {
+          subStack.pop();
+        }
+
+        // ── Options list start ──────────────────────────────────────────
+        if (content.startsWith('[')) {
+          optionsAccum = content;
+          if (content.includes(']')) {
+            flushOptions();
+          } else {
+            optionsPending = true;
+          }
+          continue;
+        }
+
+        // ── Setting with value (2+ space gap) ──────────────────────────
+        const kvMatch = content.match(/^(.+?)\s{2,}(\S.*)$/);
+        if (kvMatch) {
+          const keyLabel = kvMatch[1].trim();
+          const value = kvMatch[2].trim();
+          const qualifiedKey = subPath(keyLabel);
+
+          // Detect schedule name entries containing "Zeit"
+          if (/\bZeit\b/.test(qualifiedKey) && value === '') {
+            // Schedule header with no value — fall through to sub-section logic below
+          } else {
+            const entry = { key: qualifiedKey, value, options: null };
+            sections[currentSection].settings.push(entry);
+            lastSettingRef = entry;
+            continue;
+          }
+        }
+
+        // ── Sub-section header (no right-side value, or schedule name) ──
+        // Detect schedule entries: labels containing "Zeit" (e.g. "Heizkreis HK1 Zeit 1")
+        const scheduleMatch = content.match(/^(.+\bZeit\s+\d+.*)$/);
+        if (scheduleMatch) {
+          const scheduleName = (currentSection + ' ' + scheduleMatch[1]).trim();
+          currentSchedule = { name: scheduleName, groups: [] };
+          currentGroup = null;
+          sections[currentSection].schedules.push(currentSchedule);
+          subStack.push({ name: content, indent });
+        } else {
+          // Plain sub-section header: push to path stack
+          subStack.push({ name: content, indent });
+        }
+      }
+
+      if (sectionCount === 0) {
+        throw new Error('No OekoFEN settings sections found. Is this the correct .txt export?');
+      }
+
+      return { filename: null, sectionCount, sections };
     }
 
     // ─── Column descriptor shape (for Phase 2+) ───────────────────
@@ -3089,6 +3283,7 @@
 
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
+    loadBaseline();   // BASE-01/02: load stored baseline on startup
     initOnboardingPrompt();
     // Show fetch controls if heater settings were previously saved (v1.1 Phase 6)
     if (_settings.ip && _settings.password) {
