@@ -291,6 +291,142 @@ def compute_day_stats(csv_string, date):
         return None
 
 
+def compute_and_store_stats(date):
+    """Compute stats for one day's CSV and persist to stats.db.
+
+    date: YYYYMMDD string (must match a file in HISTORY_DIR).
+    Returns True on success, False if file missing or computation fails.
+    Thread-safe: opens a fresh DB connection per call.
+    """
+    csv_path = os.path.join(HISTORY_DIR, f'{date}.csv')
+    if not os.path.isfile(csv_path):
+        return False
+    try:
+        with open(csv_path, 'rb') as f:
+            raw = f.read()
+        csv_string = raw.decode('windows-1252')
+    except Exception as exc:
+        print(f'[stats] Could not read {date}.csv: {exc}')
+        return False
+
+    stats = compute_day_stats(csv_string, date)
+    if stats is None:
+        return False
+
+    try:
+        conn = open_stats_db()
+        conn.execute('''
+            INSERT OR REPLACE INTO daily_stats
+            (date, starts, runtime_minutes, pellet_kg, avg_outdoor_temp,
+             flow_return_delta, degree_day_consumption, row_count,
+             hours_covered, is_partial, computed_at)
+            VALUES (:date, :starts, :runtime_minutes, :pellet_kg, :avg_outdoor_temp,
+                    :flow_return_delta, :degree_day_consumption, :row_count,
+                    :hours_covered, :is_partial, :computed_at)
+        ''', stats)
+        conn.commit()
+        conn.close()
+        rt = stats['runtime_minutes']
+        rt_str = f'{rt:.1f}' if rt is not None else 'N/A'
+        print(f'[stats] Stored stats for {date}: {stats["starts"]} starts, {rt_str} min')
+        return True
+    except Exception as exc:
+        print(f'[stats] DB write failed for {date}: {exc}')
+        return False
+
+
+def backfill_stats():
+    """Process all ./history/*.csv files not yet in stats.db.
+
+    Called synchronously at server startup so stats are ready before
+    the first /stats request arrives.
+    """
+    if not os.path.isdir(HISTORY_DIR):
+        print('[stats] Backfill complete — 0 new days computed (no history directory)')
+        return
+
+    csv_dates = set()
+    for f in os.listdir(HISTORY_DIR):
+        if f.endswith('.csv') and len(f) == 12:  # YYYYMMDD.csv
+            csv_dates.add(f[:-4])
+
+    if not csv_dates:
+        print('[stats] Backfill complete — 0 new days computed (no CSV files)')
+        return
+
+    try:
+        conn = open_stats_db()
+        cur = conn.execute('SELECT date FROM daily_stats')
+        existing_dates = {row[0] for row in cur.fetchall()}
+        conn.close()
+    except Exception as exc:
+        print(f'[stats] Could not query existing dates: {exc}')
+        existing_dates = set()
+
+    missing = sorted(csv_dates - existing_dates)
+    n = 0
+    for date in missing:
+        if compute_and_store_stats(date):
+            n += 1
+    print(f'[stats] Backfill complete — {n} new days computed')
+
+
+def get_all_stats():
+    """Retrieve all daily stats from stats.db and compute multi-day trend.
+
+    Returns dict:
+        { 'days': [...], 'trend': {...}, 'total_days': N, 'complete_days': M }
+    """
+    try:
+        conn = open_stats_db()
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute('SELECT * FROM daily_stats ORDER BY date ASC')
+        rows = [dict(row) for row in cur.fetchall()]
+        conn.close()
+    except Exception as exc:
+        print(f'[stats] get_all_stats DB error: {exc}')
+        rows = []
+
+    total_days = len(rows)
+    complete_days_data = [r for r in rows if r.get('is_partial') == 0 and r.get('starts') is not None]
+    complete_days = len(complete_days_data)
+
+    # Linear regression on starts over time (complete days only)
+    n = len(complete_days_data)
+    if n < 3:
+        trend = {'direction': None, 'slope': None, 'label': 'N/A — need 3+ complete days'}
+    else:
+        xs = list(range(n))
+        ys = [r['starts'] for r in complete_days_data]
+        sum_x = sum(xs)
+        sum_y = sum(ys)
+        sum_xy = sum(x * y for x, y in zip(xs, ys))
+        sum_x2 = sum(x * x for x in xs)
+        denom = n * sum_x2 - sum_x ** 2
+        if denom == 0:
+            slope = 0.0
+        else:
+            slope = (n * sum_xy - sum_x * sum_y) / denom
+
+        if slope > 0.05:
+            direction = 'up'
+            label = f'\u2191 +{slope:.2f} starts/day'
+        elif slope < -0.05:
+            direction = 'down'
+            label = f'\u2193 {slope:.2f} starts/day'
+        else:
+            direction = 'stable'
+            label = '\u2192 stable'
+        trend = {'direction': direction, 'slope': slope, 'label': label}
+
+    return {
+        'days': rows,
+        'trend': trend,
+        'total_days': total_days,
+        'complete_days': complete_days,
+    }
+
+
 def load_schedule_settings():
     """Load heater connection settings from settings.json (same directory as server.py).
     Expected JSON: {"ip": "10.10.30.3", "port": "4321", "password": "ctT9"}
@@ -328,6 +464,7 @@ def fetch_and_store_today(settings):
         with open(path, 'wb') as f:
             f.write(data)
         print(f'[schedule] Stored {date_str}.csv ({len(data)} bytes)')
+        compute_and_store_stats(date_str)
         return True
     except Exception as exc:
         print(f'[schedule] Fetch failed: {exc}')
@@ -405,6 +542,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, f'History serve error: {exc}')
             return
 
+        # Route: GET /stats — return pre-computed daily stats as JSON
+        if parsed.path == '/stats':
+            stats = get_all_stats()
+            body = json.dumps(stats, default=lambda x: None).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         if parsed.path == '/proxy':
             params = urllib.parse.parse_qs(parsed.query)
             target_url = params.get('url', [None])[0]
@@ -450,6 +599,11 @@ if __name__ == '__main__':
         else:
             t = threading.Thread(target=run_schedule, args=(args.schedule, sched_settings), daemon=True)
             t.start()
+
+    try:
+        backfill_stats()
+    except Exception as exc:
+        print(f'[stats] Backfill error (non-fatal): {exc}')
 
     server = http.server.HTTPServer((HOST, PORT), Handler)
     url = f'http://localhost:{PORT}'
