@@ -1183,7 +1183,9 @@
         if (indent === 0 && /^Anlagennummer\b/.test(content)) continue;
 
         // ── Top-level section header (indent 0, not a separator) ────────
-        if (indent === 0) {
+        // Guard: OekoFEN section names are plain words/phrases — no ;:{}[]",'<>=|
+        // This rejects CSV headers (contain ;), JSON lines (contain :{}"[]), etc.
+        if (indent === 0 && /^[A-Za-z\u00C0-\u017E][A-Za-z0-9\u00C0-\u017E ()._\-]*$/.test(content)) {
           currentSection = content;
           ensureSection(currentSection);
           subStack = [];
