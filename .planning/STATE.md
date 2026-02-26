@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Direct Download
+status: unknown
+last_updated: "2026-02-26T14:23:53.730Z"
+progress:
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 14
+---
+
 # Project State
 
 ## Project Reference
@@ -10,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 9 — Data Aggregation
-Plan: 00 (planning complete — 2 plans ready)
-Status: Ready to execute — 0 of 2 plans complete
-Last activity: 2026-02-26 — Phase 9 plans created (09-01 aggregation engine, 09-02 statistics UI)
+Plan: 01 (1 of 2 plans complete)
+Status: In progress — 1 of 2 plans complete
+Last activity: 2026-02-26 — Completed 09-01 (SQLite aggregation engine + /stats endpoint)
 
 Progress: [████████░░] 72%
 
@@ -53,6 +66,7 @@ Progress: [████████░░] 72%
 | 07-03 | loadHistoryFromServer() Startup Wiring | 5min | 2 | Complete |
 | 08-01 | Baseline Data Layer + Onboarding Step 2 | 2min | 2 | Complete |
 | 08-02 | Settings Modal Baseline Section + Verification | ~10min | 2 | Complete |
+| 09-01 | SQLite Aggregation Engine + /stats Endpoint | 3min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -105,6 +119,8 @@ Key architectural decisions relevant to v1.2:
 - [Phase 08-settings-baseline]: Parse failure leaves _baseline and localStorage unchanged; inline error shown (not toast); file input reset so same file can be retried
 - [Phase 08-settings-baseline]: Settings modal status line reads _baseline at modal-open time; updates live within open modal on successful reload — no modal reopen required
 - [Phase 08-settings-baseline]: All three BASE requirements (BASE-01, BASE-02, BASE-03) verified end-to-end by user — Phase 8 complete
+- [Phase 09-data-aggregation]: Open fresh SQLite connection per function call for thread safety (schedule thread + HTTP handler concurrently call compute_and_store_stats)
+- [Phase 09-data-aggregation]: Trend threshold: |slope| <= 0.05 starts/day = stable (noise floor for 3-5 day windows)
 
 ### Pending Todos
 
@@ -119,5 +135,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Phase 9 plans created and verified — 09-01 (SQLite aggregation engine) + 09-02 (Statistics UI). Ready to execute.
+Stopped at: Completed 09-data-aggregation-09-01-PLAN.md — SQLite aggregation engine, /stats endpoint, backfill on startup. Ready for 09-02 (Statistics UI).
 Resume file: none

@@ -50,8 +50,8 @@
 
 ### Data Aggregation (AGGR)
 
-- [ ] **AGGR-01**: App computes per-day statistics from stored CSVs: starts/day, pellet consumption, burner runtime, average outdoor temp, flow/return temp efficiency
-- [ ] **AGGR-02**: App identifies multi-day patterns: start frequency trend, consumption normalized to outdoor temperature
+- [x] **AGGR-01**: App computes per-day statistics from stored CSVs: starts/day, pellet consumption, burner runtime, average outdoor temp, flow/return temp efficiency
+- [x] **AGGR-02**: App identifies multi-day patterns: start frequency trend, consumption normalized to outdoor temperature
 
 ### AI Integration (AICO)
 
@@ -117,8 +117,8 @@
 | BASE-01 | Phase 8 | Complete |
 | BASE-02 | Phase 8 | Complete |
 | BASE-03 | Phase 8 | Complete |
-| AGGR-01 | Phase 9 | Pending |
-| AGGR-02 | Phase 9 | Pending |
+| AGGR-01 | Phase 9 | Complete |
+| AGGR-02 | Phase 9 | Complete |
 | AICO-01 | Phase 10 | Pending |
 | AICO-02 | Phase 10 | Pending |
 | AICO-03 | Phase 10 | Pending |
