@@ -99,7 +99,11 @@ Plans:
   1. User can drag-drop or file-pick the heater's `.txt` settings export and see a confirmation that it was loaded (file name and section count)
   2. The loaded settings are parsed into named sections (Heizkreis, Warmwasser, CONDENS, etc.) with key-value pairs accessible to the rest of the app
   3. User can reload settings at any time — loading a new `.txt` file replaces the previously stored baseline without requiring a page reload
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Baseline data layer (parseBaselineTxt, localStorage, _baseline) + onboarding step 2 prompt
+- [ ] 08-02-PLAN.md — Settings modal baseline section (reload UX) + end-to-end human verification
 
 ### Phase 9: Data Aggregation
 **Goal**: The app derives actionable statistics from stored CSV history that characterize how the heater has been operating across multiple days
@@ -143,7 +147,7 @@ Plans:
 | 5. Settings and Pipeline Foundation | v1.1 | 3/3 | Complete | 2026-02-24 |
 | 6. Download UI and Error Handling | v1.1 | 5/5 | Complete | 2026-02-25 |
 | 7. Data Accumulation | v1.2 | Complete    | 2026-02-26 | 2026-02-26 |
-| 8. Settings Baseline | v1.2 | 0/? | Not started | - |
+| 8. Settings Baseline | v1.2 | 0/2 | Not started | - |
 | 9. Data Aggregation | v1.2 | 0/? | Not started | - |
 | 10. AI Integration | v1.2 | 0/? | Not started | - |
 | 11. Analysis Panel | v1.2 | 0/? | Not started | - |
