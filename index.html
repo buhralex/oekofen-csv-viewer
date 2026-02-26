@@ -2976,6 +2976,66 @@
       pwWrap.appendChild(pwNote);
       body.appendChild(pwWrap);
 
+      // ── Baseline section ─────────────────────────────────────────────
+      const baselineSep = document.createElement('div');
+      baselineSep.style.cssText = 'border-top:1px solid var(--sep); margin:4px 0 12px;';
+      body.appendChild(baselineSep);
+
+      const baselineLabel = document.createElement('div');
+      baselineLabel.style.cssText = 'font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:6px;';
+      baselineLabel.textContent = 'Heater Settings Baseline';
+      body.appendChild(baselineLabel);
+
+      const baselineStatusEl = document.createElement('div');
+      baselineStatusEl.id = 'baseline-modal-status';
+      baselineStatusEl.style.cssText = 'font-size:12px; color:var(--text-3); margin-bottom:8px;';
+      baselineStatusEl.textContent = _baseline
+        ? '\u2713 ' + (_baseline.filename || 'settings.txt') + ' \u2014 ' + _baseline.sectionCount + ' sections'
+        : 'No baseline loaded';
+      body.appendChild(baselineStatusEl);
+
+      const baselineLoadBtn = document.createElement('button');
+      baselineLoadBtn.textContent = 'Load Settings File';
+      baselineLoadBtn.style.cssText = [
+        'padding:6px 14px; border-radius:var(--r-sm); border:1px solid var(--sep-strong);',
+        'background:none; color:var(--text-2); font-size:12px; font-family:var(--font);',
+        'cursor:pointer;',
+      ].join('');
+      body.appendChild(baselineLoadBtn);
+
+      const baselineModalErrEl = document.createElement('div');
+      baselineModalErrEl.style.cssText = 'font-size:12px; color:#DC2626; margin-top:6px; min-height:14px;';
+      body.appendChild(baselineModalErrEl);
+
+      // Hidden file input for .txt — clicking the button triggers it
+      const baselineModalFileInput = document.createElement('input');
+      baselineModalFileInput.type = 'file';
+      baselineModalFileInput.accept = '.txt';
+      baselineModalFileInput.style.display = 'none';
+      body.appendChild(baselineModalFileInput);
+
+      baselineLoadBtn.addEventListener('click', () => baselineModalFileInput.click());
+
+      baselineModalFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const parsed = parseBaselineTxt(ev.target.result);
+            parsed.filename = file.name;
+            saveBaseline(parsed);
+            baselineStatusEl.style.color = 'var(--text-2)';
+            baselineStatusEl.textContent = '\u2713 ' + file.name + ' \u2014 ' + parsed.sectionCount + ' sections';
+            baselineModalErrEl.textContent = '';
+          } catch (err) {
+            baselineModalErrEl.textContent = err.message;
+            baselineModalFileInput.value = '';
+          }
+        };
+        reader.readAsText(file, 'utf-8');
+      });
+
       dialog.appendChild(body);
 
       // Footer
