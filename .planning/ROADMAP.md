@@ -138,7 +138,12 @@ Plans:
   2. The recommendations section shows a prioritized list where each entry has a title, plain-language explanation, the specific setting name to change, and the suggested value
   3. A separate maintenance alerts section shows any flagged patterns (fan speed drift, ash fill trend, start failure sequences) detected in the analysis
   4. The panel header shows when the analysis was last run (date and time) and how many days of stored data were included in the analysis
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Analysis panel CSS + HTML skeleton (#analysis-panel, #analysis-btn) + showAnalysisPanel() toggle function + auto-hide on CSV load
+- [ ] 11-02-PLAN.md — renderAnalysisPanel() content renderer (rec-card, alert-card, metadata header) + runAnalysis() auto-open wiring
+- [ ] 11-03-PLAN.md — End-to-end human verification of all four ANLS requirements
 
 ## Progress
 
@@ -154,4 +159,4 @@ Plans:
 | 8. Settings Baseline | v1.2 | 2/2 | Complete | 2026-02-26 |
 | 9. Data Aggregation | 1/2 | In Progress|  | - |
 | 10. AI Integration | 3/3 | Complete   | 2026-02-27 | - |
-| 11. Analysis Panel | v1.2 | 0/? | Not started | - |
+| 11. Analysis Panel | v1.2 | 0/3 | Not started | - |
