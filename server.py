@@ -596,6 +596,11 @@ EXCLUSIONS (never recommend):
 - Settings that require heater firmware changes or physical modifications
 - Any change that reduces safety margins (minimum flow temperature, minimum burner runtime)
 
+CRITICAL RULE — setting_name field:
+- ONLY use setting names that appear verbatim in the HEATER SETTINGS BASELINE section of the data
+- If no matching setting exists in the baseline, set setting_name to null
+- NEVER invent, translate, or paraphrase setting names — copy them character-for-character from the baseline
+
 If the data is insufficient to make a specific recommendation, set title to "Insufficient data" and explain what additional data would be needed. Return an empty array for sections where no issues are detected."""
 
 
@@ -659,6 +664,8 @@ def build_analysis_payload(stats_data, baseline_data):
                     lines.append(f"    {k}: {v}")
     else:
         lines.append("\nHEATER SETTINGS BASELINE: Not loaded.")
+
+    lines.append("\nREMINDER: setting_name in your JSON response must be copied verbatim from the HEATER SETTINGS BASELINE above, or null if no matching setting exists.")
 
     return "\n".join(lines)
 
