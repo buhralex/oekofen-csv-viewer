@@ -3411,7 +3411,7 @@
       body.appendChild(aiCredentialLabel);
 
       const aiCredentialInp = document.createElement('input');
-      aiCredentialInp.type = 'text';
+      aiCredentialInp.type = _aiSettings.backend === 'claude' ? 'password' : 'text';
       aiCredentialInp.id = 'ai-credential';
       aiCredentialInp.placeholder = _aiSettings.backend === 'claude' ? 'sk-ant-...' : 'http://localhost:11434';
       aiCredentialInp.value = _aiSettings.credential;
@@ -3436,6 +3436,8 @@
         const isClaude = aiSelect.value === 'claude';
         aiCredentialLabel.textContent = isClaude ? 'Claude API Key' : 'Ollama Endpoint URL';
         aiCredentialInp.placeholder   = isClaude ? 'sk-ant-...' : 'http://localhost:11434';
+        aiCredentialInp.type          = isClaude ? 'password' : 'text';
+        aiCredentialInp.value         = '';
       });
 
       dialog.appendChild(body);
