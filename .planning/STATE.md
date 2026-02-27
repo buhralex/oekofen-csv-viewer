@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Direct Download
 status: unknown
+last_updated: "2026-02-27T18:22:09.096Z"
+progress:
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 21
+  completed_plans: 20
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Direct Download
+status: unknown
 last_updated: "2026-02-27T07:17:54.899Z"
 progress:
   total_phases: 6
@@ -49,11 +62,11 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 11 — Analysis Panel
-Plan: 01 (1 of ? plans in progress)
-Status: In progress — 11-01 complete (#analysis-panel shell, #analysis-btn nav button, showAnalysisPanel(), CSS infrastructure)
-Last activity: 2026-02-27 — Completed 11-01 (analysis panel infrastructure, ANLS-01)
+Plan: 02 (2 of 2 plans complete)
+Status: Phase 11 complete — 11-01 (shell, CSS, showAnalysisPanel) and 11-02 (renderAnalysisPanel, escHtml, wiring) done
+Last activity: 2026-02-27 — Completed 11-02 (renderAnalysisPanel, ANLS-02/03/04)
 
-Progress: [██████████] (Phase 11 Plan 01 complete — ready for 11-02 renderAnalysisPanel)
+Progress: [██████████] (Phase 11 complete — ANLS-01, ANLS-02, ANLS-03, ANLS-04 all delivered)
 
 ## Performance Metrics
 
@@ -96,6 +109,7 @@ Progress: [██████████] (Phase 11 Plan 01 complete — ready 
 | 10-01 | AI Settings Data Layer + Settings Modal UI | 8min | 2 | Complete |
 | 10-02 | AI Payload Assembly + Backend Dispatch | 4min | 2 | Complete |
 | 10-03 | Run Analysis Button Wiring + _lastAnalysis Contract | 2min | 2 | Complete |
+| Phase 11-analysis-panel P02 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -159,6 +173,7 @@ Key architectural decisions relevant to v1.2:
 - [Phase 10-ai-integration 10-03]: showRunAnalysisBtn()/hideRunAnalysisBtn() called from both startup init and saveAiSettings() — button appears immediately after credential save, no page reload
 - [Phase 11-analysis-panel 11-01]: #analysis-btn visibility tied to AI credential via showRunAnalysisBtn/hideRunAnalysisBtn — both run-analysis-btn and analysis-btn require credentials to be meaningful; same helper controls both
 - [Phase 11-analysis-panel 11-01]: showAnalysisPanel() mirrors showStatsPanel() exactly — same chart/minimap/toolbar/dataSummary hide/show pattern for consistent UX; panel starts empty, renderAnalysisPanel() added in Plan 02
+- [Phase 11-analysis-panel]: escHtml() added as standalone helper; renderAnalysisPanel() uses innerHTML string building consistent with rest of codebase; setting row omitted when setting_name is null; auto-open fires after showToast
 
 ### Pending Todos
 
@@ -173,5 +188,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 11-analysis-panel-11-01-PLAN.md — #analysis-panel shell, #analysis-btn nav button, showAnalysisPanel(), CSS infrastructure. ANLS-01 complete. Ready for Phase 11 Plan 02 (renderAnalysisPanel).
+Stopped at: Completed 11-analysis-panel-11-02-PLAN.md — renderAnalysisPanel(), escHtml(), click-handler wiring, runAnalysis() auto-open. ANLS-02/03/04 complete. Phase 11 fully delivered.
 Resume file: none
