@@ -977,6 +977,31 @@
     const BASELINE_KEY = 'oekofen-viewer-baseline';
     let _baseline = null;  // null until a .txt file is successfully loaded
 
+    // ─── AI Settings (v1.2 Phase 10 AICO-01) ──────────────────────
+    const AI_SETTINGS_KEY = 'oekofen-viewer-ai-settings';
+    const _aiSettings = { backend: 'ollama', credential: '' };
+    // backend: 'ollama' | 'claude'
+    // credential: Ollama endpoint URL (e.g. 'http://localhost:11434') OR Claude API key
+
+    function loadAiSettings() {
+      try {
+        const raw = localStorage.getItem(AI_SETTINGS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          _aiSettings.backend    = parsed.backend    || 'ollama';
+          _aiSettings.credential = parsed.credential || '';
+        }
+      } catch (e) {}
+    }
+
+    function saveAiSettings(backend, credential) {
+      _aiSettings.backend    = backend;
+      _aiSettings.credential = credential;
+      try {
+        localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({ backend, credential }));
+      } catch (e) { console.warn('[saveAiSettings] localStorage write failed:', e.name); }
+    }
+
     // ─── Fetch state (v1.1 Phase 6) ───────────────────────────
     let _lastFetchAt = 0;       // Unix ms timestamp when last fetch started (rate-limit guard)
     let _rateLimitTimer = null; // setTimeout handle for re-enabling the download button
@@ -1404,8 +1429,8 @@
 
     window.addEventListener('drop', (e) => {
       e.preventDefault();
-      // File dropped outside the designated drop zone — ignore silently.
-      // The drop zone has its own handler that calls handleFileDrop().
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileDrop(file);
     });
 
     // ─── Drop zone drag handlers ──────────────────────────────────
@@ -3582,19 +3607,17 @@
         const runtimeVal = d.runtime_minutes ? fmtNum(d.runtime_minutes / 60) + ' h' : '-';
         const pelletVal = (d.pellet_kg !== null && d.pellet_kg !== undefined) ? fmtNum(d.pellet_kg) + ' kg' : 'N/A';
         const outdoorVal = (d.avg_outdoor_temp !== null && d.avg_outdoor_temp !== undefined) ? fmtNum(d.avg_outdoor_temp) + ' C' : '-';
-        const deltaVal = fmtNum(d.flow_return_delta) + ' C';
         return '<tr class="stats-row" data-date="' + d.date + '">' +
                '<td>' + dateLabel + partialBadge + '</td>' +
                '<td>' + startsVal + '</td>' +
                '<td>' + runtimeVal + '</td>' +
                '<td>' + pelletVal + '</td>' +
                '<td>' + outdoorVal + '</td>' +
-               '<td>' + deltaVal + '</td>' +
                '</tr>';
       }).join('');
 
       const tableHtml = '<div class="stats-table-wrap"><table class="stats-table">' +
-        '<thead><tr><th>Date</th><th>Starts</th><th>Runtime</th><th>Consumption</th><th>Avg Outdoor</th><th>Flow/Return Delta</th></tr></thead>' +
+        '<thead><tr><th>Date</th><th>Starts</th><th>Runtime</th><th>Consumption</th><th>Avg Outdoor</th></tr></thead>' +
         '<tbody>' + rowsHtml + '</tbody></table></div>' +
         '<div style="margin-top:8px; font-size:11px; color:var(--text-3);">* Partial day (less than 20h of data) \u2014 excluded from trend calculation</div>';
 
@@ -3623,6 +3646,7 @@
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
     loadBaseline();   // BASE-01/02: load stored baseline on startup
+    loadAiSettings(); // AICO-01: load stored AI backend settings on startup
     initOnboardingPrompt();
     initBaselinePrompt();
     // Show fetch controls if heater settings were previously saved (v1.1 Phase 6)
