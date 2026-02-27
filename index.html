@@ -1099,6 +1099,9 @@
           ', ' + alertCount + ' maintenance alert' + (alertCount !== 1 ? 's' : '') + '.',
           'success', 6000
         );
+        // Phase 11: auto-open analysis panel with fresh results
+        showAnalysisPanel(true);
+        renderAnalysisPanel();
 
       } catch (err) {
         if (err.name === 'TimeoutError' || err.name === 'AbortError') {
@@ -3641,7 +3644,7 @@
         showAnalysisPanel(false);
       } else {
         showAnalysisPanel(true);
-        // renderAnalysisPanel() called here in Plan 02
+        renderAnalysisPanel();
       }
     });
 
