@@ -1000,6 +1000,91 @@
       try {
         localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({ backend, credential }));
       } catch (e) { console.warn('[saveAiSettings] localStorage write failed:', e.name); }
+      if (credential) {
+        showRunAnalysisBtn();
+      } else {
+        hideRunAnalysisBtn();
+      }
+    }
+
+    // ─── AI Analysis State (v1.2 Phase 10 AICO-04) ─────────────────
+    let _lastAnalysis = null;
+    // When analysis succeeds: { recommendations: [...], maintenance_alerts: [...], days_analyzed: N, analyzed_at: ms }
+    // Phase 11 reads _lastAnalysis directly — no additional fetch needed.
+
+    async function runAnalysis() {
+      // Guard: must be served via server.py (not file://)
+      if (window.location.protocol === 'file:') {
+        showToast(
+          'AI analysis requires server.py. Double-click start.bat or run: python server.py',
+          'error', 8000
+        );
+        return;
+      }
+
+      // Guard: AI settings must be configured
+      if (!_aiSettings.credential) {
+        showToast('Configure an AI backend in Settings before running analysis.', 'warning', 5000);
+        openSettingsModal();
+        return;
+      }
+
+      // Show loading state
+      const btn = document.getElementById('run-analysis-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Analysing\u2026'; }
+      showToast('Sending data to AI backend\u2026', 'info', 4000);
+
+      try {
+        const resp = await fetch('/ai-analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            backend:       _aiSettings.backend,
+            credential:    _aiSettings.credential,
+            baseline_data: _baseline,   // null if not loaded — server handles gracefully
+          }),
+          signal: AbortSignal.timeout(130000),  // 130s > server's 120s AI timeout
+        });
+
+        if (!resp.ok) {
+          const errText = await resp.text().catch(() => '');
+          showToast(
+            'Analysis failed (HTTP ' + resp.status + '). ' + (errText.slice(0, 120) || 'Check server terminal.'),
+            'error', 10000
+          );
+          return;
+        }
+
+        const data = await resp.json();
+        _lastAnalysis = data;
+
+        const recCount   = (data.recommendations  || []).length;
+        const alertCount = (data.maintenance_alerts || []).length;
+        showToast(
+          'Analysis complete \u2014 ' + recCount + ' recommendation' + (recCount !== 1 ? 's' : '') +
+          ', ' + alertCount + ' maintenance alert' + (alertCount !== 1 ? 's' : '') + '.',
+          'success', 6000
+        );
+
+      } catch (err) {
+        if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+          showToast('AI analysis timed out (>130s). Try a faster model or check Ollama.', 'error', 8000);
+        } else {
+          showToast('Could not reach server for analysis. Is server.py running?', 'error', 8000);
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Run Analysis'; }
+      }
+    }
+
+    function showRunAnalysisBtn() {
+      const btn = document.getElementById('run-analysis-btn');
+      if (btn) btn.style.display = '';
+    }
+
+    function hideRunAnalysisBtn() {
+      const btn = document.getElementById('run-analysis-btn');
+      if (btn) btn.style.display = 'none';
     }
 
     // ─── Fetch state (v1.1 Phase 6) ───────────────────────────

@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Direct Download
 status: unknown
+last_updated: "2026-02-27T07:17:54.899Z"
+progress:
+  total_phases: 6
+  completed_phases: 5
+  total_plans: 18
+  completed_plans: 17
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Direct Download
+status: unknown
 last_updated: "2026-02-27T07:13:11.172Z"
 progress:
   total_phases: 6
@@ -36,11 +49,11 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 10 — AI Integration
-Plan: 01 (1 of ? plans complete)
-Status: In progress — 10-01 complete (AI settings data layer + Settings modal UI)
-Last activity: 2026-02-27 — Completed 10-01 (_aiSettings data layer, AI Backend section in Settings modal)
+Plan: 02 (2 of 3 plans complete)
+Status: In progress — 10-02 complete (SYSTEM_PROMPT, payload builder, Ollama/Claude dispatch, POST /ai-analyze)
+Last activity: 2026-02-27 — Completed 10-02 (POST /ai-analyze endpoint with expert system prompt and dual-backend dispatch)
 
-Progress: [█████████░] 78%
+Progress: [█████████░] 83%
 
 ## Performance Metrics
 
@@ -81,6 +94,7 @@ Progress: [█████████░] 78%
 | 08-02 | Settings Modal Baseline Section + Verification | ~10min | 2 | Complete |
 | 09-01 | SQLite Aggregation Engine + /stats Endpoint | 3min | 2 | Complete |
 | 10-01 | AI Settings Data Layer + Settings Modal UI | 8min | 2 | Complete |
+| 10-02 | AI Payload Assembly + Backend Dispatch | 4min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -137,6 +151,8 @@ Key architectural decisions relevant to v1.2:
 - [Phase 09-data-aggregation]: Trend threshold: |slope| <= 0.05 starts/day = stable (noise floor for 3-5 day windows)
 - [Phase 10-ai-integration]: AI_SETTINGS_KEY isolated from SETTINGS_KEY — AI credentials stored separately from connection credentials
 - [Phase 10-ai-integration]: backend: 'ollama' | 'claude' discriminant used so downstream payload assembly (10-02/10-03) can branch request construction
+- [Phase 10-ai-integration]: SYSTEM_PROMPT embedded verbatim shared by call_ollama and call_claude; expert OekoFEN knowledge base covers starts, heating curve, pellet benchmarks, maintenance, with Oeko Modus exclusion
+- [Phase 10-ai-integration]: POST /ai-analyze uses build_analysis_payload() to send aggregated stats only (never raw CSV); parse_ai_response() handles plain JSON, markdown-fenced JSON, and fallback gracefully
 
 ### Pending Todos
 
@@ -151,5 +167,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 10-ai-integration-10-01-PLAN.md — _aiSettings data layer, AI Backend section in Settings modal. Ready for 10-02 (AI payload assembly).
+Stopped at: Completed 10-ai-integration-10-02-PLAN.md — SYSTEM_PROMPT, build_analysis_payload(), call_ollama(), call_claude(), POST /ai-analyze route. Ready for 10-03 (Run Analysis button wiring in index.html).
 Resume file: none
