@@ -3643,6 +3643,7 @@
       if (isShowing) {
         showAnalysisPanel(false);
       } else {
+        showStatsPanel(false);
         showAnalysisPanel(true);
         renderAnalysisPanel();
       }
@@ -3655,6 +3656,7 @@
       if (isShowing) {
         showStatsPanel(false);
       } else {
+        showAnalysisPanel(false);
         showStatsPanel(true);
         await loadStatsPanel();
       }
