@@ -681,6 +681,74 @@ def parse_ai_response(text):
     }
 
 
+def call_ollama(endpoint, payload_text):
+    """Send analysis request to Ollama chat API.
+    endpoint: e.g. 'http://localhost:11434' (no trailing slash)
+    Returns raw response text string.
+    Raises RuntimeError on HTTP or network error.
+    """
+    endpoint = endpoint.rstrip('/')
+    url = endpoint + '/api/chat'
+    body = json.dumps({
+        'model': 'llama3.2',   # default model; user can change via endpoint
+        'stream': False,
+        'messages': [
+            {'role': 'system', 'content': SYSTEM_PROMPT},
+            {'role': 'user',   'content': payload_text},
+        ],
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        url, data=body,
+        headers={'Content-Type': 'application/json'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        # Ollama response: { "message": { "content": "..." }, ... }
+        return data['message']['content']
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f'Ollama returned HTTP {exc.code}: {exc.read().decode("utf-8", errors="replace")[:200]}')
+    except Exception as exc:
+        raise RuntimeError(f'Ollama call failed: {exc}')
+
+
+def call_claude(api_key, payload_text):
+    """Send analysis request to Claude API (api.anthropic.com).
+    api_key: Anthropic API key string starting with 'sk-ant-...'
+    Returns raw response text string.
+    Raises RuntimeError on HTTP or network error.
+    """
+    url = 'https://api.anthropic.com/v1/messages'
+    body = json.dumps({
+        'model': 'claude-haiku-4-5',
+        'max_tokens': 1024,
+        'system': SYSTEM_PROMPT,
+        'messages': [
+            {'role': 'user', 'content': payload_text},
+        ],
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        url, data=body,
+        headers={
+            'Content-Type': 'application/json',
+            'x-api-key': api_key,
+            'anthropic-version': '2023-06-01',
+        },
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        # Claude response: { "content": [{"type": "text", "text": "..."}], ... }
+        return data['content'][0]['text']
+    except urllib.error.HTTPError as exc:
+        body_text = exc.read().decode('utf-8', errors='replace')[:300]
+        raise RuntimeError(f'Claude API returned HTTP {exc.code}: {body_text}')
+    except Exception as exc:
+        raise RuntimeError(f'Claude API call failed: {exc}')
+
+
 def load_schedule_settings():
     """Load heater connection settings from settings.json (same directory as server.py).
     Expected JSON: {"ip": "10.10.30.3", "port": "4321", "password": "ctT9"}
@@ -909,6 +977,55 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
             except Exception as exc:
                 self.send_error(500, f'POST /settings error: {exc}')
+        elif parsed.path == '/ai-analyze':
+            length = int(self.headers.get('Content-Length', 0))
+            raw = self.rfile.read(length)
+            try:
+                req_body = json.loads(raw.decode('utf-8'))
+            except Exception:
+                self.send_error(400, 'Invalid JSON body')
+                return
+
+            backend    = req_body.get('backend', 'ollama')
+            credential = req_body.get('credential', '').strip()
+            # baseline_data is optional — browser sends null if not loaded
+            baseline_data = req_body.get('baseline_data')
+
+            if not credential:
+                self.send_error(400, 'Missing credential (endpoint URL or API key)')
+                return
+
+            # Build context payload from pre-computed stats (AICO-02: no raw CSV rows)
+            try:
+                stats_data = get_all_stats()
+                payload_text = build_analysis_payload(stats_data, baseline_data)
+            except Exception as exc:
+                self.send_error(500, f'Failed to build analysis payload: {exc}')
+                return
+
+            # Dispatch to the configured backend
+            try:
+                if backend == 'claude':
+                    ai_text = call_claude(credential, payload_text)
+                else:
+                    # default: ollama
+                    ai_text = call_ollama(credential, payload_text)
+            except RuntimeError as exc:
+                self.send_error(502, str(exc))
+                return
+
+            # Parse structured response
+            structured = parse_ai_response(ai_text)
+            structured['days_analyzed'] = stats_data.get('total_days', 0)
+            structured['analyzed_at']   = int(time.time() * 1000)
+
+            resp_body = json.dumps(structured).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Length', str(len(resp_body)))
+            self.end_headers()
+            self.wfile.write(resp_body)
         else:
             self.send_error(405, 'Method not allowed')
 
