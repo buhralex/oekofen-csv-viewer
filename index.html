@@ -852,6 +852,10 @@
     #stats-btn { padding: 4px 12px; background: transparent; color: var(--text-2); border: 1px solid var(--sep-strong); border-radius: var(--r-pill); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: color 0.15s, border-color 0.15s, background 0.15s; }
     #stats-btn:hover { color: var(--text-1); border-color: var(--text-3); background: var(--bg-l2); }
     #stats-btn.active { background: var(--blue-dim); color: var(--blue); border-color: rgba(37, 99, 235, 0.25); }
+    /* Phase 10: Run Analysis button (AICO-04) */
+    #run-analysis-btn { padding: 4px 12px; background: var(--grad); color: #fff; border: none; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: opacity 0.15s; }
+    #run-analysis-btn:hover { opacity: 0.88; }
+    #run-analysis-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -918,6 +922,7 @@
     <span id="header-filename"></span>
     <div style="display:flex; align-items:center; gap:8px;">
       <button id="settings-btn" title="Heater Settings" style="background:none; border:none; cursor:pointer; color:var(--text-2); padding:4px 6px; border-radius:var(--r-sm); display:flex; align-items:center; font-size:18px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='var(--text-1)'" onmouseout="this.style.color='var(--text-2)'">&#9881;</button>
+      <button id="run-analysis-btn" title="Run AI Analysis" style="display:none;">Run Analysis</button>
       <button id="stats-btn" title="Statistics">Statistics</button>
       <button id="load-another-btn">Load Another</button>
     </div>
@@ -3483,6 +3488,10 @@
     const settingsBtnDrop = document.getElementById('settings-btn-drop');
     if (settingsBtnDrop) settingsBtnDrop.addEventListener('click', openSettingsModal);
 
+    // ─── Phase 10: Run Analysis button wiring (AICO-04) ──────────
+    const runAnalysisBtn = document.getElementById('run-analysis-btn');
+    if (runAnalysisBtn) runAnalysisBtn.addEventListener('click', runAnalysis);
+
     // ─── Statistics button wiring (v1.2 Phase 9) ──────────────────
     document.getElementById('stats-btn').addEventListener('click', async function() {
       const panel = document.getElementById('stats-panel');
@@ -3799,6 +3808,7 @@
     loadSettings();
     loadBaseline();   // BASE-01/02: load stored baseline on startup
     loadAiSettings(); // AICO-01: load stored AI backend settings on startup
+    if (_aiSettings.credential) showRunAnalysisBtn(); // AICO-04: show button if credential already saved
     initOnboardingPrompt();
     initBaselinePrompt();
     // Show fetch controls if heater settings were previously saved (v1.1 Phase 6)
