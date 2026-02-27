@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Direct Download
 status: unknown
-last_updated: "2026-02-26T21:40:29.763Z"
+last_updated: "2026-02-27T07:13:11.172Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 18
+  completed_plans: 16
 ---
 
 ---
@@ -35,12 +35,12 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 
 ## Current Position
 
-Phase: 9 — Data Aggregation
-Plan: 01 (1 of 2 plans complete)
-Status: In progress — 1 of 2 plans complete
-Last activity: 2026-02-26 — Completed 09-01 (SQLite aggregation engine + /stats endpoint)
+Phase: 10 — AI Integration
+Plan: 01 (1 of ? plans complete)
+Status: In progress — 10-01 complete (AI settings data layer + Settings modal UI)
+Last activity: 2026-02-27 — Completed 10-01 (_aiSettings data layer, AI Backend section in Settings modal)
 
-Progress: [████████░░] 72%
+Progress: [█████████░] 78%
 
 ## Performance Metrics
 
@@ -70,7 +70,7 @@ Progress: [████████░░] 72%
 | 06-04 | Python Proxy Server (server.py + start.bat) | 2min | 3 | Complete |
 | 06-05 | fetchCsv Proxy Wiring + Error Messages | —min | 2 | Complete |
 
-**v1.2 Plans Completed: 4/?**
+**v1.2 Plans Completed: 5/?**
 
 | Plan | Name | Duration | Tasks | Status |
 |------|------|----------|-------|--------|
@@ -80,6 +80,7 @@ Progress: [████████░░] 72%
 | 08-01 | Baseline Data Layer + Onboarding Step 2 | 2min | 2 | Complete |
 | 08-02 | Settings Modal Baseline Section + Verification | ~10min | 2 | Complete |
 | 09-01 | SQLite Aggregation Engine + /stats Endpoint | 3min | 2 | Complete |
+| 10-01 | AI Settings Data Layer + Settings Modal UI | 8min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -134,6 +135,8 @@ Key architectural decisions relevant to v1.2:
 - [Phase 08-settings-baseline]: All three BASE requirements (BASE-01, BASE-02, BASE-03) verified end-to-end by user — Phase 8 complete
 - [Phase 09-data-aggregation]: Open fresh SQLite connection per function call for thread safety (schedule thread + HTTP handler concurrently call compute_and_store_stats)
 - [Phase 09-data-aggregation]: Trend threshold: |slope| <= 0.05 starts/day = stable (noise floor for 3-5 day windows)
+- [Phase 10-ai-integration]: AI_SETTINGS_KEY isolated from SETTINGS_KEY — AI credentials stored separately from connection credentials
+- [Phase 10-ai-integration]: backend: 'ollama' | 'claude' discriminant used so downstream payload assembly (10-02/10-03) can branch request construction
 
 ### Pending Todos
 
@@ -147,6 +150,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Completed 09-data-aggregation-09-01-PLAN.md — SQLite aggregation engine, /stats endpoint, backfill on startup. Ready for 09-02 (Statistics UI).
+Last session: 2026-02-27
+Stopped at: Completed 10-ai-integration-10-01-PLAN.md — _aiSettings data layer, AI Backend section in Settings modal. Ready for 10-02 (AI payload assembly).
 Resume file: none

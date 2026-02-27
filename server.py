@@ -529,6 +529,158 @@ def get_all_stats():
     }
 
 
+SYSTEM_PROMPT = """You are an expert OekoFEN pellet boiler technician with deep knowledge of the Pearl, P4, and Pellematic series. Analyse the provided operational statistics and heater settings to identify concrete, actionable improvements. Return ONLY valid JSON matching this schema exactly:
+
+{
+  "recommendations": [
+    {
+      "title": "Short action title (max 10 words)",
+      "explanation": "Plain-language reason and expected benefit (2-4 sentences)",
+      "setting_name": "Exact setting name as it appears in the heater menu, or null",
+      "suggested_value": "Specific value to set, or null if no single setting change applies"
+    }
+  ],
+  "maintenance_alerts": [
+    {
+      "title": "Alert title",
+      "detail": "What was detected and why it matters"
+    }
+  ]
+}
+
+Expert knowledge base (apply when relevant):
+
+BURNER STARTS:
+- Normal: 2–5 starts/day for space heating; >8 starts/day indicates short-cycling
+- Short-cycling causes: oversized boiler, buffer tank too small, heating curve too steep, hysteresis band too narrow
+- Heating curve (Heizkurve Steilheit) typical range 0.8–1.8; steeper = more starts in mild weather
+- Heizkurve Niveau shifts the entire curve up/down without changing slope
+
+PELLET CONSUMPTION:
+- Reference: 2–4 kg/day per 10 kW boiler output at 0°C outdoor temp
+- Degree-day consumption (kg per degree-day) normalises for weather; compare across days
+- High consumption at mild outdoor temps = heating curve too steep or room thermostat set too high
+- Pellet hopper level below 20% warrants refill before next cold spell
+
+HEATING CURVE INTERPRETATION:
+- Steilheit (slope) controls sensitivity: 0.8 = shallow (mild response), 1.8 = steep (aggressive)
+- Niveau (offset) raises/lowers flow temperature across all outdoor conditions
+- Flow temperature > 75°C in non-condensing mode wastes energy; optimal 55–70°C for underfloor, 60–75°C for radiators
+- Flow/return delta < 8°C suggests pump speed too high; > 20°C suggests pump too slow
+
+MAINTENANCE INDICATORS:
+- Fan speed (Geblaese) drifting above 85% of rated speed = ash buildup or heat exchanger fouling; schedule cleaning
+- Ignition failures (starts counter rising but runtime not increasing proportionally) = worn igniter or pellet feed issue
+- Return temperature consistently > 55°C = no condensate recovery possible; check system hydraulics
+- Storage fill declining faster than expected for the outdoor temperature = check pellet quality (moisture, fines)
+
+EXCLUSIONS (never recommend):
+- Öko Modus / Eco Mode — known to underperform in practice; do not mention or suggest enabling it
+- Settings that require heater firmware changes or physical modifications
+- Any change that reduces safety margins (minimum flow temperature, minimum burner runtime)
+
+If the data is insufficient to make a specific recommendation, set title to "Insufficient data" and explain what additional data would be needed. Return an empty array for sections where no issues are detected."""
+
+
+def build_analysis_payload(stats_data, baseline_data):
+    """Build a compact text context for the AI — aggregated stats + settings only.
+    Raw CSV rows are NEVER included. Context size stays manageable (<4KB typical).
+    """
+    lines = []
+
+    # --- Period summary ---
+    days = stats_data.get('days', [])
+    total = stats_data.get('total_days', 0)
+    complete = stats_data.get('complete_days', 0)
+    trend = stats_data.get('trend', {})
+    live = stats_data.get('live', {})
+
+    if days:
+        dates = [d['date'] for d in days]
+        lines.append(f"ANALYSIS PERIOD: {dates[0]} to {dates[-1]} ({total} days stored, {complete} complete)")
+    else:
+        lines.append("ANALYSIS PERIOD: No data stored yet.")
+
+    # --- Start trend ---
+    lines.append(f"START FREQUENCY TREND: {trend.get('label', 'N/A')}")
+    if trend.get('slope') is not None:
+        lines.append(f"  Regression slope: {trend['slope']:.3f} starts/day")
+
+    # --- Per-day table (complete days only, most recent 14 days max) ---
+    complete_days = [d for d in days if d.get('is_partial') == 0 and d.get('starts') is not None]
+    recent = complete_days[-14:]  # cap at 14 to control context size
+    if recent:
+        lines.append("\nPER-DAY STATISTICS (complete days, most recent first):")
+        lines.append("Date       | Starts | Runtime(min) | Pellet(kg) | AvgOutdoor(°C) | Flow-Return(°C)")
+        lines.append("-" * 80)
+        for d in reversed(recent):
+            starts   = str(d.get('starts', 'N/A'))
+            runtime  = f"{d['runtime_minutes']:.0f}" if d.get('runtime_minutes') is not None else 'N/A'
+            pellet   = f"{d['pellet_kg']:.2f}" if d.get('pellet_kg') is not None else 'N/A'
+            outdoor  = f"{d['avg_outdoor_temp']:.1f}" if d.get('avg_outdoor_temp') is not None else 'N/A'
+            delta    = f"{d['flow_return_delta']:.1f}" if d.get('flow_return_delta') is not None else 'N/A'
+            lines.append(f"{d['date']} | {starts:>6} | {runtime:>12} | {pellet:>10} | {outdoor:>14} | {delta}")
+
+    # --- Live status ---
+    if live.get('storage_kg') is not None:
+        lines.append(f"\nCURRENT STORAGE: {live['storage_kg']:.0f} kg")
+    if live.get('days_remaining') is not None:
+        lines.append(f"ESTIMATED DAYS REMAINING: {live['days_remaining']:.1f} days")
+    if live.get('avg_runtime_min') is not None:
+        lines.append(f"AVG RUN DURATION (heater): {live['avg_runtime_min']:.0f} min")
+
+    # --- Heater settings baseline ---
+    if baseline_data and isinstance(baseline_data, dict):
+        sections = baseline_data.get('sections', {})
+        if sections:
+            lines.append("\nHEATER SETTINGS BASELINE:")
+            for section_name, kvs in sections.items():
+                if not isinstance(kvs, dict):
+                    continue
+                lines.append(f"  [{section_name}]")
+                for k, v in kvs.items():
+                    lines.append(f"    {k}: {v}")
+    else:
+        lines.append("\nHEATER SETTINGS BASELINE: Not loaded.")
+
+    return "\n".join(lines)
+
+
+def parse_ai_response(text):
+    """Extract JSON from AI response text. AI may include prose before/after the JSON block.
+    Returns dict with keys 'recommendations' and 'maintenance_alerts' (both lists).
+    Falls back to error structure if parsing fails.
+    """
+    # Try to extract JSON from markdown code block first
+    json_match = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', text, re.DOTALL)
+    if json_match:
+        candidate = json_match.group(1)
+    else:
+        # Find the outermost { } in the response
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            candidate = text[start:end + 1]
+        else:
+            candidate = None
+
+    if candidate:
+        try:
+            parsed = json.loads(candidate)
+            return {
+                'recommendations': parsed.get('recommendations', []),
+                'maintenance_alerts': parsed.get('maintenance_alerts', []),
+            }
+        except json.JSONDecodeError:
+            pass
+
+    # Fallback: return the raw text as a single recommendation so nothing is silently lost
+    return {
+        'recommendations': [{'title': 'AI response parse error', 'explanation': text[:500], 'setting_name': None, 'suggested_value': None}],
+        'maintenance_alerts': [],
+    }
+
+
 def load_schedule_settings():
     """Load heater connection settings from settings.json (same directory as server.py).
     Expected JSON: {"ip": "10.10.30.3", "port": "4321", "password": "ctT9"}

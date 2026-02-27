@@ -55,7 +55,7 @@
 
 ### AI Integration (AICO)
 
-- [ ] **AICO-01**: User configures AI backend in Settings — Ollama endpoint (local) or Claude API key (cloud)
+- [x] **AICO-01**: User configures AI backend in Settings — Ollama endpoint (local) or Claude API key (cloud)
 - [ ] **AICO-02**: AI receives structured context only — aggregated statistics and parsed settings; raw CSV rows are never sent
 - [ ] **AICO-03**: System prompt encodes curated OekoFEN expert knowledge: start frequency norms, heating curve interpretation, pellet consumption benchmarks, maintenance indicators — no Öko Modus recommendations
 - [ ] **AICO-04**: User triggers analysis with one button and receives structured recommendations
@@ -119,7 +119,7 @@
 | BASE-03 | Phase 8 | Complete |
 | AGGR-01 | Phase 9 | Complete |
 | AGGR-02 | Phase 9 | Complete |
-| AICO-01 | Phase 10 | Pending |
+| AICO-01 | Phase 10 | Complete |
 | AICO-02 | Phase 10 | Pending |
 | AICO-03 | Phase 10 | Pending |
 | AICO-04 | Phase 10 | Pending |
