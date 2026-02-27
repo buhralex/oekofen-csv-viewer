@@ -3482,6 +3482,46 @@
 
       footer.appendChild(cancelBtn);
       footer.appendChild(saveBtn);
+
+      // ─── Danger Zone ─────────────────────────────────────────────
+      const dangerSep = document.createElement('div');
+      dangerSep.style.cssText = 'margin:20px -24px 0; border-top:1px solid var(--sep-strong);';
+      dialog.appendChild(dangerSep);
+
+      const dangerSection = document.createElement('div');
+      dangerSection.style.cssText = 'padding:14px 24px 20px;';
+
+      const dangerLabel = document.createElement('div');
+      dangerLabel.textContent = 'Danger Zone';
+      dangerLabel.style.cssText = 'font-size:11px; font-weight:600; color:#EF4444; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;';
+      dangerSection.appendChild(dangerLabel);
+
+      const clearRow = document.createElement('div');
+      clearRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:12px;';
+
+      const clearDesc = document.createElement('span');
+      clearDesc.textContent = 'Clear stored CSV history';
+      clearDesc.style.cssText = 'font-size:12px; color:var(--text-2);';
+      clearRow.appendChild(clearDesc);
+
+      const clearBtn = document.createElement('button');
+      clearBtn.textContent = 'Clear History';
+      clearBtn.style.cssText = [
+        'padding:5px 12px; border-radius:var(--r-sm); font-size:12px; font-family:var(--font);',
+        'cursor:pointer; border:1px solid #EF4444; background:none; color:#EF4444;',
+        'white-space:nowrap; flex-shrink:0;',
+      ].join('');
+      clearBtn.addEventListener('click', () => {
+        if (!confirm('Delete all stored CSV days from your browser? This cannot be undone.')) return;
+        clearHistoryDb().then(() => {
+          updateHistoryIndicator();
+          showToast('History cleared.', 'info', 3000);
+        });
+      });
+      clearRow.appendChild(clearBtn);
+      dangerSection.appendChild(clearRow);
+      dialog.appendChild(dangerSection);
+
       dialog.appendChild(footer);
       backdrop.appendChild(dialog);
       document.body.appendChild(backdrop);
@@ -3787,14 +3827,9 @@
         const first = formatHistoryDate(days[0].date);
         const last  = formatHistoryDate(days[days.length - 1].date);
         const range = count === 1 ? first : first + ' \u2013 ' + last;
-        // Render as: "12 days stored: 2026-01-14 – 2026-02-25   [Clear]"
+        // Render as: "12 days stored: 2026-01-14 – 2026-02-25"
         el.innerHTML =
-          count + ' day' + (count === 1 ? '' : 's') + ' stored: ' + range +
-          '&nbsp;&nbsp;<button id="clear-history-btn" style="background:none; border:none; color:var(--text-3); font-size:11px; cursor:pointer; font-family:var(--font); text-decoration:underline; padding:0;">Clear</button>';
-        document.getElementById('clear-history-btn').addEventListener('click', async () => {
-          await clearHistoryDb();
-          updateHistoryIndicator();
-        });
+          count + ' day' + (count === 1 ? '' : 's') + ' stored: ' + range;
       } catch (e) {
         console.warn('[history] Failed to read IndexedDB for indicator:', e);
       }
