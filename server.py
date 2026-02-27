@@ -469,6 +469,20 @@ def get_all_stats():
     live = fetch_live_api()
     today_str     = datetime.date.today().strftime('%Y%m%d')
     yesterday_str = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d')
+
+    # Persist yesterday's authoritative consumption value to DB
+    if live['pellets_yesterday'] is not None:
+        try:
+            conn = open_stats_db()
+            conn.execute(
+                'UPDATE daily_stats SET pellet_kg = ? WHERE date = ?',
+                (float(live['pellets_yesterday']), yesterday_str)
+            )
+            conn.commit()
+            conn.close()
+        except Exception as exc:
+            print(f'[stats] Could not persist pellets_yesterday: {exc}')
+
     for row in rows:
         if row['date'] == today_str and live['pellets_today'] is not None:
             row['pellet_kg'] = live['pellets_today']
