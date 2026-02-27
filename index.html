@@ -950,6 +950,7 @@
     <div style="display:flex; align-items:center; gap:8px;">
       <button id="settings-btn" title="Heater Settings" style="background:none; border:none; cursor:pointer; color:var(--text-2); padding:4px 6px; border-radius:var(--r-sm); display:flex; align-items:center; font-size:18px; line-height:1; transition:color 0.15s;" onmouseover="this.style.color='var(--text-1)'" onmouseout="this.style.color='var(--text-2)'">&#9881;</button>
       <button id="run-analysis-btn" title="Run AI Analysis" style="display:none;">Run Analysis</button>
+      <button id="analysis-btn" title="AI Analysis" style="display:none;">Analysis</button>
       <button id="stats-btn" title="Statistics">Statistics</button>
       <button id="load-another-btn">Load Another</button>
     </div>
@@ -975,6 +976,9 @@
 
   <!-- Statistics panel: Phase 9 AGGR -->
   <div id="stats-panel" style="display:none; padding:70px 24px 20px; max-width:900px; margin:0 auto;"></div>
+
+  <!-- Analysis panel: Phase 11 ANLS -->
+  <div id="analysis-panel" style="display:none; padding:70px 24px 20px; max-width:900px; margin:0 auto;"></div>
 
   <!-- Status bar -->
   <div id="status-bar">
@@ -1111,11 +1115,15 @@
     function showRunAnalysisBtn() {
       const btn = document.getElementById('run-analysis-btn');
       if (btn) btn.style.display = '';
+      const analysisBtn = document.getElementById('analysis-btn');
+      if (analysisBtn) analysisBtn.style.display = '';
     }
 
     function hideRunAnalysisBtn() {
       const btn = document.getElementById('run-analysis-btn');
       if (btn) btn.style.display = 'none';
+      const analysisBtn = document.getElementById('analysis-btn');
+      if (analysisBtn) analysisBtn.style.display = 'none';
     }
 
     // ─── Fetch state (v1.1 Phase 6) ───────────────────────────
@@ -1501,6 +1509,10 @@
       document.getElementById('stats-panel').style.display = 'none';
       const statsBtn = document.getElementById('stats-btn');
       if (statsBtn) statsBtn.classList.remove('active');
+      // Phase 11: auto-hide analysis panel when a new CSV loads
+      document.getElementById('analysis-panel').style.display = 'none';
+      const analysisBtn = document.getElementById('analysis-btn');
+      if (analysisBtn) analysisBtn.classList.remove('active');
       document.getElementById('drop-zone').style.display = 'none';
       document.getElementById('app-header').classList.add('visible');
       document.getElementById('data-summary').classList.add('visible');
@@ -1533,6 +1545,31 @@
         toolbarRow.classList.add('visible');
         dataSummary.classList.add('visible');
         if (statsBtn) statsBtn.classList.remove('active');
+      }
+    }
+
+    // Phase 11: Toggle between analysis panel view and chart view
+    function showAnalysisPanel(show) {
+      const analysisPanel = document.getElementById('analysis-panel');
+      const chartArea      = document.getElementById('chart-area');
+      const minimapArea    = document.getElementById('minimap-area');
+      const toolbarRow     = document.getElementById('toolbar-row');
+      const dataSummary    = document.getElementById('data-summary');
+      const analysisBtn    = document.getElementById('analysis-btn');
+      if (show) {
+        analysisPanel.style.display = 'block';
+        chartArea.classList.remove('visible');
+        minimapArea.classList.remove('visible');
+        toolbarRow.classList.remove('visible');
+        dataSummary.classList.remove('visible');
+        if (analysisBtn) analysisBtn.classList.add('active');
+      } else {
+        analysisPanel.style.display = 'none';
+        chartArea.classList.add('visible');
+        minimapArea.classList.add('visible');
+        toolbarRow.classList.add('visible');
+        dataSummary.classList.add('visible');
+        if (analysisBtn) analysisBtn.classList.remove('active');
       }
     }
 
@@ -3518,6 +3555,18 @@
     // ─── Phase 10: Run Analysis button wiring (AICO-04) ──────────
     const runAnalysisBtn = document.getElementById('run-analysis-btn');
     if (runAnalysisBtn) runAnalysisBtn.addEventListener('click', runAnalysis);
+
+    // ─── Phase 11: Analysis button wiring (ANLS-01) ───────────────
+    document.getElementById('analysis-btn').addEventListener('click', function() {
+      const panel = document.getElementById('analysis-panel');
+      const isShowing = panel.style.display !== 'none';
+      if (isShowing) {
+        showAnalysisPanel(false);
+      } else {
+        showAnalysisPanel(true);
+        // renderAnalysisPanel() called here in Plan 02
+      }
+    });
 
     // ─── Statistics button wiring (v1.2 Phase 9) ──────────────────
     document.getElementById('stats-btn').addEventListener('click', async function() {
