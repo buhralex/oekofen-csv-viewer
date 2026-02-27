@@ -48,12 +48,12 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 
 ## Current Position
 
-Phase: 10 — AI Integration
-Plan: 03 (3 of 3 plans complete — Phase 10 COMPLETE)
-Status: Complete — 10-03 complete (runAnalysis() + #run-analysis-btn + _lastAnalysis contract for Phase 11)
-Last activity: 2026-02-27 — Completed 10-03 (Run Analysis button wiring, _lastAnalysis module-level state, Phase 10 complete)
+Phase: 11 — Analysis Panel
+Plan: 01 (1 of ? plans in progress)
+Status: In progress — 11-01 complete (#analysis-panel shell, #analysis-btn nav button, showAnalysisPanel(), CSS infrastructure)
+Last activity: 2026-02-27 — Completed 11-01 (analysis panel infrastructure, ANLS-01)
 
-Progress: [██████████] 100% (v1.2 Phase 10 complete — ready for Phase 11)
+Progress: [██████████] (Phase 11 Plan 01 complete — ready for 11-02 renderAnalysisPanel)
 
 ## Performance Metrics
 
@@ -157,6 +157,8 @@ Key architectural decisions relevant to v1.2:
 - [Phase 10-ai-integration 10-03]: _lastAnalysis module-level variable is the Phase 11 contract — null until first successful runAnalysis(); never updated on failure
 - [Phase 10-ai-integration 10-03]: AbortSignal.timeout(130000) chosen — 130s > server's 120s AI timeout so browser-side abort fires first
 - [Phase 10-ai-integration 10-03]: showRunAnalysisBtn()/hideRunAnalysisBtn() called from both startup init and saveAiSettings() — button appears immediately after credential save, no page reload
+- [Phase 11-analysis-panel 11-01]: #analysis-btn visibility tied to AI credential via showRunAnalysisBtn/hideRunAnalysisBtn — both run-analysis-btn and analysis-btn require credentials to be meaningful; same helper controls both
+- [Phase 11-analysis-panel 11-01]: showAnalysisPanel() mirrors showStatsPanel() exactly — same chart/minimap/toolbar/dataSummary hide/show pattern for consistent UX; panel starts empty, renderAnalysisPanel() added in Plan 02
 
 ### Pending Todos
 
@@ -171,5 +173,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 10-ai-integration-10-03-PLAN.md — runAnalysis() + #run-analysis-btn + _lastAnalysis contract. Phase 10 (AI Integration) fully complete. Ready for Phase 11 (Analysis Panel).
+Stopped at: Completed 11-analysis-panel-11-01-PLAN.md — #analysis-panel shell, #analysis-btn nav button, showAnalysisPanel(), CSS infrastructure. ANLS-01 complete. Ready for Phase 11 Plan 02 (renderAnalysisPanel).
 Resume file: none

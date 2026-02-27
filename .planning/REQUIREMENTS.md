@@ -62,7 +62,7 @@
 
 ### Analysis Panel (ANLS)
 
-- [ ] **ANLS-01**: Analysis panel is a full-screen view replacing the chart, with navigation back to the chart
+- [x] **ANLS-01**: Analysis panel is a full-screen view replacing the chart, with navigation back to the chart
 - [ ] **ANLS-02**: Recommendations shown as a prioritized list — each with title, explanation, setting name, and suggested value
 - [ ] **ANLS-03**: Maintenance alerts (fan speed drift, ash fill trend, start failure patterns) shown in a separate section
 - [ ] **ANLS-04**: Panel shows when analysis was last run and how many days of data it used
@@ -123,7 +123,7 @@
 | AICO-02 | Phase 10 | Complete |
 | AICO-03 | Phase 10 | Complete |
 | AICO-04 | Phase 10 | Complete |
-| ANLS-01 | Phase 11 | Pending |
+| ANLS-01 | Phase 11 | Complete |
 | ANLS-02 | Phase 11 | Pending |
 | ANLS-03 | Phase 11 | Pending |
 | ANLS-04 | Phase 11 | Pending |
