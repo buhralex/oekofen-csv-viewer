@@ -1517,7 +1517,10 @@
     }
 
     function showAppView(filename) {
-      // Phase 9: auto-hide stats panel when a new CSV loads
+      // Phase 9: auto-hide stats panel when a new CSV loads; invalidate cache so
+      // the next open re-fetches with the newly uploaded day included.
+      _statsCache = null;
+      _statsSynced = false;
       document.getElementById('stats-panel').style.display = 'none';
       const statsBtn = document.getElementById('stats-btn');
       if (statsBtn) statsBtn.classList.remove('active');
@@ -3836,9 +3839,11 @@
     }
 
     // ─── Phase 9: Statistics Panel (AGGR-01, AGGR-02) ─────────────
-    async function loadStatsPanel() {
+    let _statsCache = null;      // { data, fetchedAt }
+    let _statsSynced = false;    // IndexedDB→server sync runs once per session
+
+    async function loadStatsPanel(forceRefresh) {
       const panel = document.getElementById('stats-panel');
-      panel.innerHTML = '<div class="stats-empty">Loading statistics...</div>';
 
       // file:// fallback: /stats endpoint is unavailable
       if (window.location.protocol === 'file:') {
@@ -3846,36 +3851,54 @@
         return;
       }
 
-      // Sync IndexedDB days to server (browser data the server may not have yet)
-      try {
-        const serverDatesArr = await fetch('/history', { signal: AbortSignal.timeout(3000) })
-          .then(function(r) { return r.ok ? r.json() : []; })
-          .catch(function() { return []; });
-        const serverSet = new Set(serverDatesArr);
-        const localDays = await getAllHistoryDays().catch(function() { return []; });
-        for (const day of localDays) {
-          if (!serverSet.has(day.date)) {
-            try {
-              await fetch('/history?date=' + day.date, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-                body: day.csvString,
-                signal: AbortSignal.timeout(10000)
-              });
-            } catch (e) { /* ignore individual upload failures */ }
+      // Return cached data if fresh (< 60 s) and not forced
+      const CACHE_TTL = 60000;
+      if (!forceRefresh && _statsCache && (Date.now() - _statsCache.fetchedAt) < CACHE_TTL) {
+        renderStatsPanel(panel, _statsCache.data);
+        return;
+      }
+
+      panel.innerHTML = '<div class="stats-empty">Loading statistics...</div>';
+
+      // Sync IndexedDB days to server once per session (browser data the server may not have yet)
+      if (!_statsSynced) {
+        _statsSynced = true;
+        try {
+          const serverDatesArr = await fetch('/history', { signal: AbortSignal.timeout(3000) })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .catch(function() { return []; });
+          const serverSet = new Set(serverDatesArr);
+          const localDays = await getAllHistoryDays().catch(function() { return []; });
+          for (const day of localDays) {
+            if (!serverSet.has(day.date)) {
+              try {
+                await fetch('/history?date=' + day.date, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                  body: day.csvString,
+                  signal: AbortSignal.timeout(10000)
+                });
+              } catch (e) { /* ignore individual upload failures */ }
+            }
           }
-        }
-      } catch (e) { /* ignore sync errors — stats will still show what server has */ }
+        } catch (e) { /* ignore sync errors — stats will still show what server has */ }
+      }
 
       let statsData;
       try {
-        const resp = await fetch('/stats', { signal: AbortSignal.timeout(5000) });
+        const resp = await fetch('/stats', { signal: AbortSignal.timeout(10000) });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         statsData = await resp.json();
       } catch (e) {
         panel.innerHTML = '<div class="stats-empty">Could not load statistics. Is server.py running?</div>';
         return;
       }
+
+      _statsCache = { data: statsData, fetchedAt: Date.now() };
+      renderStatsPanel(panel, statsData);
+    }
+
+    function renderStatsPanel(panel, statsData) {
 
       if (!statsData.days || statsData.days.length === 0) {
         panel.innerHTML = '<div class="stats-empty">No statistics yet \u2014 fetch or upload at least one day\'s CSV to begin.</div>';
