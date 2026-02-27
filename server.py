@@ -92,8 +92,9 @@ def detect_columns(headers):
         ):
             detected['runtime'] = h
         # pellet cumulative counter: PE1.*cnt/verbrauch/pellet, or L_pellet
+        # Exclude PE1 CntDig (digital input counter, not a pellet meter)
         if detected['pellet'] is None and re.search(
-            r'^PE1.*(cnt|verbrauch|pellet)|^L_pellet', name_part, re.IGNORECASE
+            r'^PE1.*(cnt(?!dig)|verbrauch|pellet)|^L_pellet', name_part, re.IGNORECASE
         ):
             detected['pellet'] = h
         # pellet fill-level gauge: PE1 Fuellstand (decreases as pellets burn)
@@ -251,7 +252,9 @@ def compute_day_stats(csv_string, date):
             if first_val is not None and last_val is not None:
                 pellet_kg = max(0.0, last_val - first_val)
         # Fallback: fill-level gauge (first - last = consumption)
-        if pellet_kg is None:
+        # Also fall through if cumulative counter was stationary (first == last) —
+        # that means the column isn't tracking consumption and the gauge is more reliable.
+        if pellet_kg is None or pellet_kg == 0.0:
             pl_idx = col_idx.get('pellet_level')
             if pl_idx is not None and data_rows:
                 first_val = None
