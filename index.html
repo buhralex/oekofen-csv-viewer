@@ -3851,8 +3851,8 @@
         return;
       }
 
-      // Return cached data if fresh (< 60 s) and not forced
-      const CACHE_TTL = 60000;
+      // Return cached data if fresh (< 15 min) and not forced
+      const CACHE_TTL = 15 * 60 * 1000;
       if (!forceRefresh && _statsCache && (Date.now() - _statsCache.fetchedAt) < CACHE_TTL) {
         renderStatsPanel(panel, _statsCache.data);
         return;
