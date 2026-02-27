@@ -3124,6 +3124,70 @@
         reader.readAsText(file, 'utf-8');
       });
 
+      // ─── AI Backend section ──────────────────────────────────────
+      const aiSep = document.createElement('div');
+      aiSep.style.cssText = 'border-top:1px solid var(--sep); margin:4px 0 12px;';
+      body.appendChild(aiSep);
+
+      const aiLabel = document.createElement('div');
+      aiLabel.style.cssText = 'font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:6px;';
+      aiLabel.textContent = 'AI Backend';
+      body.appendChild(aiLabel);
+
+      const aiSelect = document.createElement('select');
+      aiSelect.id = 'ai-backend-select';
+      aiSelect.style.cssText = [
+        'width:100%; padding:7px 10px;',
+        'border:1px solid var(--sep-strong); border-radius:var(--r-sm);',
+        'font-size:13px; font-family:var(--font); color:var(--text-1);',
+        'background:var(--bg-l2); outline:none;',
+        'margin-bottom:10px; box-sizing:border-box;',
+      ].join('');
+      const optOllama = document.createElement('option');
+      optOllama.value = 'ollama';
+      optOllama.textContent = 'Ollama (local)';
+      const optClaude = document.createElement('option');
+      optClaude.value = 'claude';
+      optClaude.textContent = 'Claude API (cloud)';
+      aiSelect.appendChild(optOllama);
+      aiSelect.appendChild(optClaude);
+      aiSelect.value = _aiSettings.backend;
+      body.appendChild(aiSelect);
+
+      const aiCredentialLabel = document.createElement('div');
+      aiCredentialLabel.id = 'ai-credential-label';
+      aiCredentialLabel.style.cssText = 'display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:4px;';
+      aiCredentialLabel.textContent = _aiSettings.backend === 'claude' ? 'Claude API Key' : 'Ollama Endpoint URL';
+      body.appendChild(aiCredentialLabel);
+
+      const aiCredentialInp = document.createElement('input');
+      aiCredentialInp.type = 'text';
+      aiCredentialInp.id = 'ai-credential';
+      aiCredentialInp.placeholder = _aiSettings.backend === 'claude' ? 'sk-ant-...' : 'http://localhost:11434';
+      aiCredentialInp.value = _aiSettings.credential;
+      aiCredentialInp.style.cssText = [
+        'width:100%; padding:7px 10px;',
+        'border:1px solid var(--sep-strong); border-radius:var(--r-sm);',
+        'font-size:13px; font-family:var(--font); color:var(--text-1);',
+        'background:var(--bg-l2); outline:none;',
+        'transition:border-color 0.15s;',
+        'box-sizing:border-box;',
+      ].join('');
+      aiCredentialInp.addEventListener('focus', () => aiCredentialInp.style.borderColor = 'var(--blue)');
+      aiCredentialInp.addEventListener('blur',  () => aiCredentialInp.style.borderColor = 'var(--sep-strong)');
+      body.appendChild(aiCredentialInp);
+
+      const aiNote = document.createElement('p');
+      aiNote.style.cssText = 'font-size:11px; color:var(--text-3); margin-top:3px;';
+      aiNote.textContent = 'API key stored locally in your browser only.';
+      body.appendChild(aiNote);
+
+      aiSelect.addEventListener('change', () => {
+        const isClaude = aiSelect.value === 'claude';
+        aiCredentialLabel.textContent = isClaude ? 'Claude API Key' : 'Ollama Endpoint URL';
+        aiCredentialInp.placeholder   = isClaude ? 'sk-ant-...' : 'http://localhost:11434';
+      });
+
       dialog.appendChild(body);
 
       // Footer
@@ -3155,6 +3219,9 @@
         const port = document.getElementById('settings-port').value.trim();
         const pass = document.getElementById('settings-password').value.trim();
         saveSettings(ip, port, pass);
+        const aiBackend = document.getElementById('ai-backend-select').value;
+        const aiCredential = document.getElementById('ai-credential').value.trim();
+        saveAiSettings(aiBackend, aiCredential);
         closeSettingsModal();
         showToast('Settings saved.', 'info', 2000);
         // BASE-01: if this is the first time settings are saved, prompt for baseline
