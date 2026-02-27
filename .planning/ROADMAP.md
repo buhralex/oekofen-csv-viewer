@@ -34,7 +34,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 7: Data Accumulation** — IndexedDB storage for multi-day CSVs, history UI, clear action, and server-side auto-fetch schedule (complete 2026-02-26)
 - [x] **Phase 8: Settings Baseline** — Load and parse the heater `.txt` settings export into structured sections (complete 2026-02-26)
 - [ ] **Phase 9: Data Aggregation** — Compute per-day statistics and identify multi-day patterns from stored history
-- [ ] **Phase 10: AI Integration** — Configure AI backend, build structured context payload, and trigger analysis
+- [x] **Phase 10: AI Integration** — Configure AI backend, build structured context payload, and trigger analysis (completed 2026-02-27)
 - [ ] **Phase 11: Analysis Panel** — Full-screen panel showing prioritized recommendations, maintenance alerts, and analysis metadata
 
 ## Phase Details
@@ -153,5 +153,5 @@ Plans:
 | 7. Data Accumulation | v1.2 | 3/3 | Complete | 2026-02-26 |
 | 8. Settings Baseline | v1.2 | 2/2 | Complete | 2026-02-26 |
 | 9. Data Aggregation | 1/2 | In Progress|  | - |
-| 10. AI Integration | 2/3 | In Progress|  | - |
+| 10. AI Integration | 3/3 | Complete   | 2026-02-27 | - |
 | 11. Analysis Panel | v1.2 | 0/? | Not started | - |

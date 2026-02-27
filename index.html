@@ -1037,7 +1037,7 @@
       // Show loading state
       const btn = document.getElementById('run-analysis-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Analysing\u2026'; }
-      showToast('Sending data to AI backend\u2026', 'info', 4000);
+      const dismissSending = showToast('Sending data to AI backend\u2026', 'info', 0);
 
       try {
         const resp = await fetch('/ai-analyze', {
@@ -1052,11 +1052,9 @@
         });
 
         if (!resp.ok) {
-          const errText = await resp.text().catch(() => '');
-          showToast(
-            'Analysis failed (HTTP ' + resp.status + '). ' + (errText.slice(0, 120) || 'Check server terminal.'),
-            'error', 10000
-          );
+          const errBody = await resp.json().catch(() => null);
+          const errMsg = errBody && errBody.error ? errBody.error : 'Check server terminal.';
+          showToast('Analysis failed (HTTP ' + resp.status + '): ' + errMsg, 'error', 10000);
           return;
         }
 
@@ -1078,6 +1076,7 @@
           showToast('Could not reach server for analysis. Is server.py running?', 'error', 8000);
         }
       } finally {
+        dismissSending();
         if (btn) { btn.disabled = false; btn.textContent = 'Run Analysis'; }
       }
     }
@@ -1452,6 +1451,7 @@
       if (duration > 0) {
         setTimeout(dismiss, duration);
       }
+      return dismiss;
     }
 
     // ─── Status bar ───────────────────────────────────────────────

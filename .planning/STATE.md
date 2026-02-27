@@ -49,11 +49,11 @@ See: .planning/PROJECT.md (updated 2026-02-25 after v1.2 started)
 ## Current Position
 
 Phase: 10 — AI Integration
-Plan: 02 (2 of 3 plans complete)
-Status: In progress — 10-02 complete (SYSTEM_PROMPT, payload builder, Ollama/Claude dispatch, POST /ai-analyze)
-Last activity: 2026-02-27 — Completed 10-02 (POST /ai-analyze endpoint with expert system prompt and dual-backend dispatch)
+Plan: 03 (3 of 3 plans complete — Phase 10 COMPLETE)
+Status: Complete — 10-03 complete (runAnalysis() + #run-analysis-btn + _lastAnalysis contract for Phase 11)
+Last activity: 2026-02-27 — Completed 10-03 (Run Analysis button wiring, _lastAnalysis module-level state, Phase 10 complete)
 
-Progress: [█████████░] 83%
+Progress: [██████████] 100% (v1.2 Phase 10 complete — ready for Phase 11)
 
 ## Performance Metrics
 
@@ -95,6 +95,7 @@ Progress: [█████████░] 83%
 | 09-01 | SQLite Aggregation Engine + /stats Endpoint | 3min | 2 | Complete |
 | 10-01 | AI Settings Data Layer + Settings Modal UI | 8min | 2 | Complete |
 | 10-02 | AI Payload Assembly + Backend Dispatch | 4min | 2 | Complete |
+| 10-03 | Run Analysis Button Wiring + _lastAnalysis Contract | 2min | 2 | Complete |
 
 ## Accumulated Context
 
@@ -153,6 +154,9 @@ Key architectural decisions relevant to v1.2:
 - [Phase 10-ai-integration]: backend: 'ollama' | 'claude' discriminant used so downstream payload assembly (10-02/10-03) can branch request construction
 - [Phase 10-ai-integration]: SYSTEM_PROMPT embedded verbatim shared by call_ollama and call_claude; expert OekoFEN knowledge base covers starts, heating curve, pellet benchmarks, maintenance, with Oeko Modus exclusion
 - [Phase 10-ai-integration]: POST /ai-analyze uses build_analysis_payload() to send aggregated stats only (never raw CSV); parse_ai_response() handles plain JSON, markdown-fenced JSON, and fallback gracefully
+- [Phase 10-ai-integration 10-03]: _lastAnalysis module-level variable is the Phase 11 contract — null until first successful runAnalysis(); never updated on failure
+- [Phase 10-ai-integration 10-03]: AbortSignal.timeout(130000) chosen — 130s > server's 120s AI timeout so browser-side abort fires first
+- [Phase 10-ai-integration 10-03]: showRunAnalysisBtn()/hideRunAnalysisBtn() called from both startup init and saveAiSettings() — button appears immediately after credential save, no page reload
 
 ### Pending Todos
 
@@ -167,5 +171,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 10-ai-integration-10-02-PLAN.md — SYSTEM_PROMPT, build_analysis_payload(), call_ollama(), call_claude(), POST /ai-analyze route. Ready for 10-03 (Run Analysis button wiring in index.html).
+Stopped at: Completed 10-ai-integration-10-03-PLAN.md — runAnalysis() + #run-analysis-btn + _lastAnalysis contract. Phase 10 (AI Integration) fully complete. Ready for Phase 11 (Analysis Panel).
 Resume file: none

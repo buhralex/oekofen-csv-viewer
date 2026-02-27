@@ -983,7 +983,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 req_body = json.loads(raw.decode('utf-8'))
             except Exception:
-                self.send_error(400, 'Invalid JSON body')
+                self._send_json_error(400, 'Invalid JSON body')
                 return
 
             backend    = req_body.get('backend', 'ollama')
@@ -992,7 +992,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             baseline_data = req_body.get('baseline_data')
 
             if not credential:
-                self.send_error(400, 'Missing credential (endpoint URL or API key)')
+                self._send_json_error(400, 'Missing credential (endpoint URL or API key)')
                 return
 
             # Build context payload from pre-computed stats (AICO-02: no raw CSV rows)
@@ -1000,7 +1000,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 stats_data = get_all_stats()
                 payload_text = build_analysis_payload(stats_data, baseline_data)
             except Exception as exc:
-                self.send_error(500, f'Failed to build analysis payload: {exc}')
+                self._send_json_error(500, f'Failed to build analysis payload: {exc}')
                 return
 
             # Dispatch to the configured backend
@@ -1011,7 +1011,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     # default: ollama
                     ai_text = call_ollama(credential, payload_text)
             except RuntimeError as exc:
-                self.send_error(502, str(exc))
+                self._send_json_error(502, str(exc))
                 return
 
             # Parse structured response
@@ -1028,6 +1028,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(resp_body)
         else:
             self.send_error(405, 'Method not allowed')
+
+    def _send_json_error(self, code, message):
+        """Send a JSON error response (used by /ai-analyze to avoid HTML error pages)."""
+        body = json.dumps({'error': message}).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def log_message(self, fmt, *args):
         # Suppress per-request logs to keep terminal output clean
