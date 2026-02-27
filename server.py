@@ -739,7 +739,7 @@ def call_claude(api_key, payload_text):
     url = 'https://api.anthropic.com/v1/messages'
     body = json.dumps({
         'model': 'claude-haiku-4-5-20251001',
-        'max_tokens': 1024,
+        'max_tokens': 4096,
         'system': SYSTEM_PROMPT,
         'messages': [
             {'role': 'user', 'content': payload_text},
