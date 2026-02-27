@@ -1573,6 +1573,83 @@
       }
     }
 
+    // Phase 11: Escape HTML special characters to prevent XSS from AI response content
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Phase 11: Render analysis panel content from _lastAnalysis
+    function renderAnalysisPanel() {
+      const panel = document.getElementById('analysis-panel');
+      if (!panel) return;
+
+      // Empty state: no analysis run yet
+      if (!_lastAnalysis) {
+        panel.innerHTML = '<div class="anls-empty">No analysis yet &mdash; click <strong>Run Analysis</strong> to generate recommendations.</div>';
+        return;
+      }
+
+      const recs    = _lastAnalysis.recommendations   || [];
+      const alerts  = _lastAnalysis.maintenance_alerts || [];
+      const daysN   = _lastAnalysis.days_analyzed      || 0;
+      const runAt   = _lastAnalysis.analyzed_at
+                        ? new Date(_lastAnalysis.analyzed_at).toLocaleString()
+                        : 'Unknown';
+
+      // ── Header metadata ───────────────────────────────────────
+      var html = '<div class="anls-header">';
+      html += '<div class="anls-meta-item"><span class="anls-meta-label">Last run</span><span class="anls-meta-value">' + runAt + '</span></div>';
+      html += '<div class="anls-meta-item"><span class="anls-meta-label">Days analyzed</span><span class="anls-meta-value">' + daysN + '</span></div>';
+      html += '</div>';
+
+      // ── Recommendations ────────────────────────────────────────
+      html += '<div class="anls-section-title">Recommendations</div>';
+      if (recs.length === 0) {
+        html += '<div class="anls-empty" style="padding:20px 0;">No recommendations &mdash; heater is operating normally.</div>';
+      } else {
+        html += '<div class="anls-rec-list">';
+        recs.forEach(function(rec) {
+          html += '<div class="rec-card">';
+          html += '<div class="rec-card-title">' + escHtml(rec.title || '') + '</div>';
+          html += '<div class="rec-card-explanation">' + escHtml(rec.explanation || '') + '</div>';
+          // Only show setting row if at least setting_name is present
+          if (rec.setting_name) {
+            html += '<div class="rec-card-setting">';
+            html += '<span class="rec-card-setting-label">Setting</span>';
+            html += '<span class="rec-card-setting-name">' + escHtml(rec.setting_name) + '</span>';
+            if (rec.suggested_value) {
+              html += '<span class="rec-card-arrow">&rarr;</span>';
+              html += '<span class="rec-card-setting-value">' + escHtml(rec.suggested_value) + '</span>';
+            }
+            html += '</div>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      // ── Maintenance alerts ─────────────────────────────────────
+      html += '<div class="anls-section-title" style="margin-top:8px;">Maintenance Alerts</div>';
+      if (alerts.length === 0) {
+        html += '<div class="anls-empty" style="padding:20px 0;">No maintenance alerts detected.</div>';
+      } else {
+        html += '<div class="anls-alert-list">';
+        alerts.forEach(function(alert) {
+          html += '<div class="alert-card">';
+          html += '<div class="alert-card-title">' + escHtml(alert.title || '') + '</div>';
+          html += '<div class="alert-card-detail">' + escHtml(alert.detail || '') + '</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      panel.innerHTML = html;
+    }
+
     // ─── Navigation guard ─────────────────────────────────────────
     // Prevents browser from navigating away when user drops a file
     // anywhere on the page (outside the drop zone).
