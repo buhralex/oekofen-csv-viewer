@@ -1044,9 +1044,17 @@
     }
 
     // ─── AI Analysis State (v1.2 Phase 10 AICO-04) ─────────────────
+    const ANALYSIS_KEY = 'oekofen-viewer-last-analysis';
     let _lastAnalysis = null;
     // When analysis succeeds: { recommendations: [...], maintenance_alerts: [...], days_analyzed: N, analyzed_at: ms }
     // Phase 11 reads _lastAnalysis directly — no additional fetch needed.
+
+    function loadLastAnalysis() {
+      try {
+        const raw = localStorage.getItem(ANALYSIS_KEY);
+        if (raw) _lastAnalysis = JSON.parse(raw);
+      } catch (e) {}
+    }
 
     async function runAnalysis() {
       // Guard: must be served via server.py (not file://)
@@ -1091,6 +1099,7 @@
 
         const data = await resp.json();
         _lastAnalysis = data;
+        try { localStorage.setItem(ANALYSIS_KEY, JSON.stringify(data)); } catch (e) {}
 
         const recCount   = (data.recommendations  || []).length;
         const alertCount = (data.maintenance_alerts || []).length;
@@ -3964,8 +3973,9 @@
 
     // ─── Init ─────────────────────────────────────────────────────
     loadSettings();
-    loadBaseline();   // BASE-01/02: load stored baseline on startup
-    loadAiSettings(); // AICO-01: load stored AI backend settings on startup
+    loadBaseline();      // BASE-01/02: load stored baseline on startup
+    loadAiSettings();    // AICO-01: load stored AI backend settings on startup
+    loadLastAnalysis();  // ANLS: restore last analysis result across reloads
     if (_aiSettings.credential) showRunAnalysisBtn(); // AICO-04: show button if credential already saved
     initOnboardingPrompt();
     initBaselinePrompt();
