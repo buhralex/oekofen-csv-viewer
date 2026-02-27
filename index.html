@@ -941,6 +941,8 @@
       </div>
       <!-- History indicator (v1.2 Phase 7 — DACC-02/03) -->
       <div id="history-indicator" style="margin-top:14px; font-size:12px; color:var(--text-3); text-align:center; min-height:18px;"></div>
+      <!-- Cancel back to previously loaded file -->
+      <button id="cancel-load-btn" style="display:none; margin-top:12px; background:none; border:none; color:var(--text-3); font-size:12px; cursor:pointer; font-family:var(--font);">&#8592; Cancel</button>
     </div>
   </div>
 
@@ -1510,6 +1512,8 @@
     function showDropZone() {
       document.getElementById('drop-zone').style.display = 'flex';
       document.getElementById('app-header').classList.remove('visible');
+      const cancelBtn = document.getElementById('cancel-load-btn');
+      if (cancelBtn) cancelBtn.style.display = AppState.filename ? '' : 'none';
       document.getElementById('data-summary').classList.remove('visible');
       document.getElementById('toolbar-row').classList.remove('visible');
       document.getElementById('chart-area').classList.remove('visible');
@@ -3628,13 +3632,11 @@
 
     // ─── Load Another button ──────────────────────────────────────
     document.getElementById('load-another-btn').addEventListener('click', () => {
-      destroyChart();
-      showDropZone();
-      AppState.dataModel = null;
-      AppState.filename = null;
-      AppState.fileDate = null;
-      AppState.chartSeries = null;
-      setStatus('Ready \u2014 drop an OekoFEN CSV file to begin');
+      showDropZone();  // chart and state preserved so Cancel can restore
+    });
+
+    document.getElementById('cancel-load-btn').addEventListener('click', () => {
+      showAppView(AppState.filename);
     });
 
     // ─── Settings button wiring (v1.1) ────────────────────────────
