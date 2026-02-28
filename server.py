@@ -65,13 +65,18 @@ def open_stats_db():
     return conn
 
 
-def detect_columns(headers):
+def detect_columns(headers, sensor_mapping=None):
     """Auto-detect meaningful column names from a CSV header list.
+
+    sensor_mapping: optional dict of overrides, e.g. {'return_temp': 'Rücklauf [°C]'}.
+    When a key is present and non-empty, that exact column name is used instead of the
+    auto-detect regex for that sensor.
 
     Returns a dict with keys:
         'burner', 'runtime', 'pellet', 'outdoor_temp', 'flow_temp', 'return_temp'
     Each value is the full header string that matched, or None.
     """
+    mapping = sensor_mapping or {}
     detected = {
         'burner': None,
         'runtime': None,       # cumulative hours counter (last - first = daily runtime h)
@@ -81,6 +86,10 @@ def detect_columns(headers):
         'flow_temp': None,
         'return_temp': None,
     }
+    # Apply exact-match overrides from sensor_mapping before running regex detection
+    for key, col_name in mapping.items():
+        if col_name and key in detected and col_name in headers:
+            detected[key] = col_name
     for h in headers:
         name_part = h.split('[')[0].strip()
         # burner: exact case-insensitive match on 'BR'
@@ -127,9 +136,10 @@ def parse_german_float(s):
         return None
 
 
-def compute_day_stats(csv_string, date):
+def compute_day_stats(csv_string, date, sensor_mapping=None):
     """Compute per-day statistics from a CSV string (windows-1252 decoded).
 
+    sensor_mapping: optional dict of column overrides (see detect_columns).
     Returns a dict with all daily_stats fields, or None on fatal error.
     """
     try:
@@ -147,7 +157,7 @@ def compute_day_stats(csv_string, date):
             return None
 
         headers = [h.strip() for h in header_line.split(';')]
-        detected = detect_columns(headers)
+        detected = detect_columns(headers, sensor_mapping)
 
         # Map column names to indices
         col_idx = {}
@@ -292,7 +302,9 @@ def compute_day_stats(csv_string, date):
                 if f_idx < len(row) and ret_idx < len(row):
                     fv = parse_german_float(row[f_idx])
                     rv = parse_german_float(row[ret_idx])
-                    if fv is not None and rv is not None:
+                    # Skip rows where return temp is zero or negative — indicates
+                    # a missing/broken sensor rather than a real measurement.
+                    if fv is not None and rv is not None and rv > 0:
                         deltas.append(fv - rv)
             if deltas:
                 flow_return_delta = sum(deltas) / len(deltas)
@@ -348,7 +360,8 @@ def compute_and_store_stats(date):
         print(f'[stats] Could not read {date}.csv: {exc}')
         return False
 
-    stats = compute_day_stats(csv_string, date)
+    sensor_mapping = load_schedule_settings().get('sensor_mapping') or {}
+    stats = compute_day_stats(csv_string, date, sensor_mapping)
     if stats is None:
         return False
 
@@ -577,7 +590,9 @@ PELLET CONSUMPTION:
 - Reference: 2–4 kg/day per 10 kW boiler output at 0°C outdoor temp
 - Degree-day consumption (kg per degree-day) normalises for weather; compare across days
 - High consumption at mild outdoor temps = heating curve too steep or room thermostat set too high
-- Pellet hopper level below 20% warrants refill before next cold spell
+- The PELLET HOPPER is the small (~50 kg) internal container inside the heater; it is auto-refilled from the external storage via an auger/conveyor — do NOT alert about the hopper needing a manual refill
+- The EXTERNAL PELLET STORAGE is the large silo (hundreds to thousands of kg) that is manually refilled by pellet delivery; low external storage with few days remaining warrants a delivery alert
+- External storage below 500 kg or fewer than 30 days remaining warrants a delivery reminder alert
 
 HEATING CURVE INTERPRETATION:
 - Steilheit (slope) controls sensitivity: 0.8 = shallow (mild response), 1.8 = steep (aggressive)
@@ -595,6 +610,25 @@ EXCLUSIONS (never recommend):
 - Öko Modus / Eco Mode — known to underperform in practice; do not mention or suggest enabling it
 - Settings that require heater firmware changes or physical modifications
 - Any change that reduces safety margins (minimum flow temperature, minimum burner runtime)
+- Any recommendation based on flow/return delta when the Flow-Return column shows N/A — N/A means no valid return temperature sensor data is available for this system
+
+TITLE RULES — follow precisely:
+- Titles must be directionally accurate. Check the current value against suggested_value before writing the title.
+  If suggested_value is numerically LOWER than the current value: use "Reduce", "Lower", or "Decrease" — NEVER "Raise" or "Increase".
+  If suggested_value is numerically HIGHER than the current value: use "Raise" or "Increase" — NEVER "Reduce" or "Lower".
+  If the current value is unknown: use the neutral form "Set [setting] to [value]".
+- Always include the target value in the title when a specific setting is involved. Good: "Reduce room setpoint to 22°C". Bad: "Adjust heating setpoint".
+- Use imperative form (describe the action, not the problem). Good: "Reduce slope to 1.1". Bad: "Heating curve slope is too steep".
+
+EXPLANATION RULES — follow precisely:
+- Always state the current value and target value explicitly in the first sentence: "Currently X; recommended Y."
+- In the second sentence explain the mechanism — why this setting affects the observed symptom.
+- In the third sentence state the expected outcome in measurable terms where possible (e.g. "should reduce daily starts from ~9 to ~4").
+- Do not restate the title verbatim.
+
+suggested_value RULES:
+- Use German decimal comma format matching the heater's locale (e.g. "1,2" not "1.2", "22,0 °C" not "22.0°C").
+- Include the unit only when the heater displays it (copy format from the HEATER SETTINGS BASELINE).
 
 CRITICAL RULE — setting_name field:
 - ONLY use setting names that appear verbatim in the HEATER SETTINGS BASELINE section of the data
@@ -604,11 +638,33 @@ CRITICAL RULE — setting_name field:
 If the data is insufficient to make a specific recommendation, set title to "Insufficient data" and explain what additional data would be needed. Return an empty array for sections where no issues are detected."""
 
 
-def build_analysis_payload(stats_data, baseline_data):
+def build_analysis_payload(stats_data, baseline_data, applied_changes=None, system_config=None):
     """Build a compact text context for the AI — aggregated stats + settings only.
     Raw CSV rows are NEVER included. Context size stays manageable (<4KB typical).
     """
     lines = []
+
+    # --- System configuration (heater + buffer) ---
+    if system_config:
+        heater_label  = system_config.get('heaterLabel', '').strip()
+        heater_kw     = system_config.get('heaterPowerKw')
+        buffer_label  = system_config.get('bufferLabel', '').strip()
+        buffer_vol    = system_config.get('bufferVolumeL')
+        buffer_type   = system_config.get('bufferType', 'none')
+        if heater_label or heater_kw or buffer_label:
+            lines.append("SYSTEM CONFIGURATION:")
+            if heater_label:
+                lines.append(f"  Heater: {heater_label}")
+            if heater_kw:
+                ref_lo = round(heater_kw * 0.2, 1)
+                ref_hi = round(heater_kw * 0.4, 1)
+                lines.append(f"  → Pellet reference for this heater: {ref_lo}–{ref_hi} kg/day at 0°C outdoor temp")
+            if buffer_type == 'none':
+                lines.append("  Buffer: None (no buffer tank — short-cycling risk is higher)")
+            elif buffer_label:
+                lines.append(f"  Buffer: {buffer_label}")
+                if buffer_vol:
+                    lines.append(f"  → Factor {buffer_vol} L buffer into short-cycling analysis")
 
     # --- Period summary ---
     days = stats_data.get('days', [])
@@ -644,10 +700,13 @@ def build_analysis_payload(stats_data, baseline_data):
             lines.append(f"{d['date']} | {starts:>6} | {runtime:>12} | {pellet:>10} | {outdoor:>14} | {delta}")
 
     # --- Live status ---
+    lines.append("")
     if live.get('storage_kg') is not None:
-        lines.append(f"\nCURRENT STORAGE: {live['storage_kg']:.0f} kg")
+        lines.append(f"CURRENT EXTERNAL PELLET STORAGE: {live['storage_kg']:.0f} kg (large external silo, manually refilled by delivery)")
+    if live.get('storage_hopper_kg') is not None:
+        lines.append(f"CURRENT PELLET HOPPER: {live['storage_hopper_kg']:.0f} kg (small ~50 kg hopper inside the heater, auto-refilled from external storage via auger)")
     if live.get('days_remaining') is not None:
-        lines.append(f"ESTIMATED DAYS REMAINING: {live['days_remaining']:.1f} days")
+        lines.append(f"ESTIMATED DAYS REMAINING (external storage): {live['days_remaining']:.1f} days")
     if live.get('avg_runtime_min') is not None:
         lines.append(f"AVG RUN DURATION (heater): {live['avg_runtime_min']:.0f} min")
 
@@ -660,12 +719,38 @@ def build_analysis_payload(stats_data, baseline_data):
                 if not isinstance(kvs, dict):
                     continue
                 lines.append(f"  [{section_name}]")
-                for k, v in kvs.items():
-                    lines.append(f"    {k}: {v}")
+                for entry in kvs.get('settings', []):
+                    lines.append(f"    {entry['key']}: {entry['value']}")
     else:
         lines.append("\nHEATER SETTINGS BASELINE: Not loaded.")
 
     lines.append("\nREMINDER: setting_name in your JSON response must be copied verbatim from the HEATER SETTINGS BASELINE above, or null if no matching setting exists.")
+
+    # --- Applied setting changes log ---
+    if applied_changes:
+        lines.append("\nAPPLIED SETTING CHANGES (recorded by user, newest first):")
+        for ch in applied_changes:
+            try:
+                from datetime import datetime, timezone
+                dt = datetime.fromtimestamp(ch['appliedAt'] / 1000, tz=timezone.utc)
+                date_str = dt.strftime('%Y-%m-%d')
+            except Exception:
+                date_str = '(unknown date)'
+            rec_val  = ch.get('recommendedValue')
+            act_val  = ch.get('actualValue', '')
+            setting  = ch.get('settingName', '')
+            title    = ch.get('title', '')
+            rec_str  = f" (was recommended: {rec_val})" if rec_val is not None else ''
+            lines.append(f"  [{date_str}] {setting}: set to {act_val}{rec_str}  — \"{title}\"")
+        lines.append(
+            "\nINSTRUCTIONS FOR APPLIED CHANGES:"
+            "\n- Do NOT recommend changing any setting that already appears in the APPLIED SETTING CHANGES list."
+            "\n- When evaluating the effectiveness of an applied change, use only operational data"
+            " collected AFTER the change date; data before that date reflects the old setting."
+            "\n- If recent post-change data shows the applied value is working well, acknowledge it."
+            "\n- If post-change data is insufficient (less than 3 complete days), note that more time"
+            " is needed before effectiveness can be assessed."
+        )
 
     return "\n".join(lines)
 
@@ -906,6 +991,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, f'History serve error: {exc}')
             return
 
+        # Route: GET /csv-columns — return column headers from most recent CSV
+        if parsed.path == '/csv-columns':
+            try:
+                import glob as _glob
+                csv_files = sorted(_glob.glob(os.path.join(HISTORY_DIR, '*.csv')))
+                columns = []
+                if csv_files:
+                    with open(csv_files[-1], 'rb') as f:
+                        raw = f.read(8192)
+                    for enc in ('windows-1252', 'utf-8', 'utf-8-sig'):
+                        try:
+                            text = raw.decode(enc); break
+                        except UnicodeDecodeError:
+                            continue
+                    else:
+                        text = ''
+                    first_line = next((l for l in text.splitlines() if l.strip()), '')
+                    columns = [h.strip() for h in first_line.split(';') if h.strip()]
+                body = json.dumps({'columns': columns}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as exc:
+                self.send_error(500, f'csv-columns error: {exc}')
+            return
+
         # Route: GET /stats — return pre-computed daily stats as JSON
         if parsed.path == '/stats':
             stats = get_all_stats()
@@ -987,15 +1101,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(length)
             try:
                 payload = json.loads(body.decode('utf-8'))
-                ip       = str(payload.get('ip', '')).strip()
-                port     = str(payload.get('port', '4321')).strip()
-                password = str(payload.get('password', '')).strip()
-                if not ip or not password:
-                    self.send_error(400, 'ip and password are required')
+                ip             = str(payload.get('ip', '')).strip()
+                port           = str(payload.get('port', '4321')).strip()
+                password       = str(payload.get('password', '')).strip()
+                sensor_mapping = payload.get('sensor_mapping') or {}
+                # ip and password must both be present if either is supplied
+                if bool(ip) != bool(password):
+                    self.send_error(400, 'ip and password must both be set (or both empty)')
                     return
                 settings_path = os.path.join(SCRIPT_DIR, 'settings.json')
+                existing = {}
+                if os.path.isfile(settings_path):
+                    try:
+                        with open(settings_path, 'r') as f:
+                            existing = json.load(f)
+                    except Exception:
+                        pass
+                existing.update({'ip': ip, 'port': port, 'password': password,
+                                 'sensor_mapping': sensor_mapping})
                 with open(settings_path, 'w') as f:
-                    json.dump({'ip': ip, 'port': port, 'password': password}, f)
+                    json.dump(existing, f)
                 self.send_response(204)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
@@ -1010,10 +1135,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._send_json_error(400, 'Invalid JSON body')
                 return
 
-            backend    = req_body.get('backend', 'ollama')
-            credential = req_body.get('credential', '').strip()
+            backend         = req_body.get('backend', 'ollama')
+            credential      = req_body.get('credential', '').strip()
             # baseline_data is optional — browser sends null if not loaded
-            baseline_data = req_body.get('baseline_data')
+            baseline_data   = req_body.get('baseline_data')
+            # applied_changes: list of {appliedAt (ms epoch), title, settingName, recommendedValue, actualValue}
+            applied_changes = req_body.get('applied_changes') or []
+            # system_config: {heaterLabel, heaterPowerKw, bufferType, bufferLabel, bufferVolumeL, sensorMapping}
+            system_config   = req_body.get('system_config') or {}
 
             if not credential:
                 self._send_json_error(400, 'Missing credential (endpoint URL or API key)')
@@ -1022,7 +1151,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Build context payload from pre-computed stats (AICO-02: no raw CSV rows)
             try:
                 stats_data = get_all_stats()
-                payload_text = build_analysis_payload(stats_data, baseline_data)
+                payload_text = build_analysis_payload(stats_data, baseline_data, applied_changes, system_config)
             except Exception as exc:
                 self._send_json_error(500, f'Failed to build analysis payload: {exc}')
                 return
