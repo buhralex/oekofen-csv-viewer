@@ -198,8 +198,15 @@ None.
 - **[RESOLVED 2026-02-25 via 06-04] handleFetchNetworkError error message** — proxy server now unblocks CORS permanently; 06-05 wired fetchCsv to use /proxy and updated error messages
 - **[RESOLVED as N/A 2026-02-24] Chrome 142 Local Network Access** — CORS block from heater occurs before LNA becomes relevant; LNA is not a separate concern given current architecture.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | make page scrollable | 2026-03-01 | 60a9f87 | [1-make-page-scrollable](./quick/1-make-page-scrollable/) |
+
 ## Session Continuity
 
+Last activity: 2026-03-01 - Completed quick task 1: make page scrollable
 Last session: 2026-02-27
 Stopped at: Completed 11-analysis-panel-11-02-PLAN.md — renderAnalysisPanel(), escHtml(), click-handler wiring, runAnalysis() auto-open. ANLS-02/03/04 complete. Phase 11 fully delivered.
 Resume file: none
