@@ -203,10 +203,11 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | make page scrollable | 2026-03-01 | 60a9f87 | [1-make-page-scrollable](./quick/1-make-page-scrollable/) |
+| 2 | add csv-columns endpoint, sensor mapping dropdowns, fix buffer preset names, add Pellematic Condens heater models | 2026-03-01 | a4e9d48 | [2-add-csv-columns-endpoint-sensor-mapping-](./quick/2-add-csv-columns-endpoint-sensor-mapping-/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-01 - Completed quick task 1: make page scrollable
+Last activity: 2026-03-01 - Completed quick task 2: verified csv-columns endpoint, sensor mapping UI, buffer presets, heater models all already implemented
 Last session: 2026-02-27
 Stopped at: Completed 11-analysis-panel-11-02-PLAN.md — renderAnalysisPanel(), escHtml(), click-handler wiring, runAnalysis() auto-open. ANLS-02/03/04 complete. Phase 11 fully delivered.
 Resume file: none
