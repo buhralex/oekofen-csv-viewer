@@ -1,5 +1,18 @@
 ---
 gsd_state_version: 1.0
+milestone: v1.1
+milestone_name: Direct Download
+status: unknown
+last_updated: "2026-02-28T19:16:40.740Z"
+progress:
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 21
+  completed_plans: 21
+---
+
+---
+gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Direct Download
 status: unknown

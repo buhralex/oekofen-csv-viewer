@@ -72,9 +72,11 @@
       font-family: var(--font);
       font-size: 13px;
       line-height: 1.5;
-      overflow: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      overflow-y: auto;
     }
 
     /* ─── Drop Zone ──────────────────────────────────────────── */
@@ -878,6 +880,22 @@
     .rec-card-setting-name { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); background: var(--bg-l2); border: 1px solid var(--sep-strong); border-radius: var(--r-sm); padding: 1px 6px; }
     .rec-card-arrow { font-size: 12px; color: var(--text-3); }
     .rec-card-setting-value { font-family: var(--font-mono); font-size: 12px; color: var(--blue); font-weight: 600; background: var(--blue-dim); border: 1px solid rgba(37,99,235,0.18); border-radius: var(--r-sm); padding: 1px 6px; }
+    .rec-apply-btn { margin-top:8px; padding:3px 10px; font-size:11px; font-family:var(--font); border:1px solid var(--sep-strong); border-radius:var(--r-pill); background:none; color:var(--text-2); cursor:pointer; }
+    .rec-dismiss-btn { margin-top:8px; margin-left:6px; padding:3px 10px; font-size:11px; font-family:var(--font); border:1px solid var(--sep-strong); border-radius:var(--r-pill); background:none; color:var(--text-3); cursor:pointer; }
+    .rec-card-applied { border-color:#10B981; opacity:0.75; }
+    .rec-applied-badge { margin-top:8px; font-size:11px; color:#10B981; font-weight:600; }
+    .dismissed-section-title { color:var(--text-3); }
+    .dismissed-list { display:flex; flex-direction:column; gap:4px; }
+    .dismissed-entry { display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--bg-l1); border:1px solid var(--sep-strong); border-radius:var(--r-md); opacity:0.6; }
+    .dismissed-title { flex:1; font-size:12px; color:var(--text-2); }
+    .dismiss-restore-btn { font-size:11px; background:none; border:none; color:var(--text-3); cursor:pointer; text-decoration:underline; white-space:nowrap; font-family:var(--font); }
+    .change-log-list { display:flex; flex-direction:column; gap:6px; }
+    .change-log-entry { background:var(--bg-l1); border:1px solid var(--sep-strong); border-radius:var(--r-md); padding:10px 14px; display:flex; align-items:flex-start; gap:10px; }
+    .change-log-date { font-size:11px; color:var(--text-3); white-space:nowrap; }
+    .change-log-body { flex:1; }
+    .change-log-title { font-size:13px; font-weight:600; color:var(--text-1); }
+    .change-log-setting { font-size:12px; color:var(--text-2); margin-top:2px; }
+    .change-log-undo { font-size:11px; background:none; border:none; color:var(--text-3); cursor:pointer; text-decoration:underline; white-space:nowrap; }
     .anls-alert-list { display: flex; flex-direction: column; gap: 8px; }
     .alert-card { background: var(--bg-l1); border-left: 3px solid var(--orange); border-radius: var(--r-md); padding: 12px 16px; }
     .alert-card-title { font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
@@ -977,10 +995,10 @@
   <div id="minimap-area"></div>
 
   <!-- Statistics panel: Phase 9 AGGR -->
-  <div id="stats-panel" style="display:none; padding:70px 24px 20px; max-width:900px; margin:0 auto;"></div>
+  <div id="stats-panel" style="display:none; padding:70px 24px 48px; max-width:900px; margin:0 auto;"></div>
 
   <!-- Analysis panel: Phase 11 ANLS -->
-  <div id="analysis-panel" style="display:none; padding:70px 24px 20px; max-width:900px; margin:0 auto;"></div>
+  <div id="analysis-panel" style="display:none; padding:70px 24px 48px; max-width:900px; margin:0 auto;"></div>
 
   <!-- Status bar -->
   <div id="status-bar">
@@ -1051,6 +1069,60 @@
     // When analysis succeeds: { recommendations: [...], maintenance_alerts: [...], days_analyzed: N, analyzed_at: ms }
     // Phase 11 reads _lastAnalysis directly — no additional fetch needed.
 
+    const CHANGES_KEY = 'oekofen-viewer-applied-changes';
+    let _appliedChanges = []; // [{ appliedAt, title, settingName, recommendedValue, actualValue }]
+
+    function loadAppliedChanges() {
+      try { const r = localStorage.getItem(CHANGES_KEY); if (r) _appliedChanges = JSON.parse(r); } catch(e) {}
+    }
+    function saveAppliedChanges() {
+      try { localStorage.setItem(CHANGES_KEY, JSON.stringify(_appliedChanges)); } catch(e) {}
+    }
+
+    const DISMISSED_KEY = 'oekofen-viewer-dismissed';
+    let _dismissedTitles = new Set(); // Set of title strings (recs + alerts)
+
+    const SYSTEM_CONFIG_KEY = 'oekofen-viewer-system-config';
+    const SENSOR_TYPES = [
+      { key: 'burner',       label: 'Burner status',      hint: 'auto: BR' },
+      { key: 'runtime',      label: 'Runtime counter',    hint: 'auto: PE1 Runtime' },
+      { key: 'pellet',       label: 'Pellet consumption', hint: 'auto: PE1.*cnt/verbrauch' },
+      { key: 'pellet_level', label: 'Pellet fill level',  hint: 'auto: PE1 Fuellstand' },
+      { key: 'outdoor_temp', label: 'Outdoor temperature',hint: 'auto: AT' },
+      { key: 'flow_temp',    label: 'Flow temperature',   hint: 'auto: HK1.*VL' },
+      { key: 'return_temp',  label: 'Return temperature', hint: 'auto: HK1.*RT' },
+    ];
+    const _smDefaults = {};
+    SENSOR_TYPES.forEach(function(s) { _smDefaults[s.key] = ''; });
+
+    let _systemConfig = {
+      heaterModel: '', heaterLabel: '', heaterPowerKw: null,
+      bufferType: 'none', bufferPreset: '', bufferLabel: '', bufferVolumeL: null,
+      sensorMapping: Object.assign({}, _smDefaults)
+    };
+    function loadSystemConfig() {
+      try {
+        const r = localStorage.getItem(SYSTEM_CONFIG_KEY);
+        if (r) {
+          const parsed = JSON.parse(r);
+          _systemConfig = Object.assign({}, _systemConfig, parsed);
+          // Deep merge sensorMapping so new keys get defaults if missing from stored value
+          _systemConfig.sensorMapping = Object.assign({}, _smDefaults, parsed.sensorMapping || {});
+        }
+      } catch(e) {}
+    }
+    function saveSystemConfig(cfg) {
+      Object.assign(_systemConfig, cfg);
+      try { localStorage.setItem(SYSTEM_CONFIG_KEY, JSON.stringify(_systemConfig)); } catch(e) {}
+    }
+
+    function loadDismissedTitles() {
+      try { const r = localStorage.getItem(DISMISSED_KEY); if (r) _dismissedTitles = new Set(JSON.parse(r)); } catch(e) {}
+    }
+    function saveDismissedTitles() {
+      try { localStorage.setItem(DISMISSED_KEY, JSON.stringify([..._dismissedTitles])); } catch(e) {}
+    }
+
     function loadLastAnalysis() {
       try {
         const raw = localStorage.getItem(ANALYSIS_KEY);
@@ -1075,6 +1147,10 @@
         return;
       }
 
+      // Confirm before hitting the API
+      const backendLabel = _aiSettings.backend === 'claude' ? 'Claude API (costs tokens)' : 'Ollama';
+      if (!confirm('Run AI analysis? This sends data to ' + backendLabel + '.')) return;
+
       // Show loading state
       const btn = document.getElementById('run-analysis-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Analysing\u2026'; }
@@ -1085,9 +1161,11 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            backend:       _aiSettings.backend,
-            credential:    _aiSettings.credential,
-            baseline_data: _baseline,   // null if not loaded — server handles gracefully
+            backend:         _aiSettings.backend,
+            credential:      _aiSettings.credential,
+            baseline_data:   _baseline,        // null if not loaded — server handles gracefully
+            applied_changes: _appliedChanges,  // change log with timestamps
+            system_config:   _systemConfig,    // heater/buffer/sensor config
           }),
           signal: AbortSignal.timeout(130000),  // 130s > server's 120s AI timeout
         });
@@ -1172,12 +1250,15 @@
       } catch (e) {
         console.warn('[saveSettings] localStorage write failed:', e.name);
       }
-      // Persist settings to server so it can call the heater API (e.g. /stats live data)
-      if (window.location.protocol !== 'file:' && _settings.ip && _settings.password) {
+      // Persist settings to server (always — even without ip/password, sensor_mapping must be saved)
+      if (window.location.protocol !== 'file:') {
         fetch('/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ip: _settings.ip, port: _settings.port, password: _settings.password }),
+          body: JSON.stringify({
+            ip: _settings.ip, port: _settings.port, password: _settings.password,
+            sensor_mapping: _systemConfig.sensorMapping || {},
+          }),
         }).catch(function() {});
       }
       dismissOnboarding();
@@ -1625,17 +1706,30 @@
       html += '<div class="anls-meta-item"><span class="anls-meta-label">Days analyzed</span><span class="anls-meta-value">' + daysN + '</span></div>';
       html += '</div>';
 
-      // ── Recommendations ────────────────────────────────────────
+      // ── Split recs into pending vs applied ────────────────────
+      var pendingRecs = [], appliedRecs = [];
+      recs.forEach(function(rec, idx) {
+        var change = rec.setting_name
+          ? _appliedChanges.find(function(c) { return c.settingName === rec.setting_name; })
+          : null;
+        if (change) appliedRecs.push({ rec: rec, idx: idx, change: change });
+        else        pendingRecs.push({ rec: rec, idx: idx });
+      });
+
+      // ── Pending recommendations (split by dismissed state) ─────
+      var visiblePending   = pendingRecs.filter(function(item) { return !_dismissedTitles.has(item.rec.title); });
+      var dismissedFromRec = pendingRecs.filter(function(item) { return  _dismissedTitles.has(item.rec.title); });
+
       html += '<div class="anls-section-title">Recommendations</div>';
-      if (recs.length === 0) {
-        html += '<div class="anls-empty" style="padding:20px 0;">No recommendations &mdash; heater is operating normally.</div>';
+      if (visiblePending.length === 0) {
+        html += '<div class="anls-empty" style="padding:20px 0;">No open recommendations &mdash; heater is operating normally.</div>';
       } else {
         html += '<div class="anls-rec-list">';
-        recs.forEach(function(rec) {
+        visiblePending.forEach(function(item) {
+          var rec = item.rec, idx = item.idx;
           html += '<div class="rec-card">';
           html += '<div class="rec-card-title">' + escHtml(rec.title || '') + '</div>';
           html += '<div class="rec-card-explanation">' + escHtml(rec.explanation || '') + '</div>';
-          // Only show setting row if at least setting_name is present
           if (rec.setting_name) {
             html += '<div class="rec-card-setting">';
             html += '<span class="rec-card-setting-label">Setting</span>';
@@ -1645,6 +1739,33 @@
               html += '<span class="rec-card-setting-value">' + escHtml(rec.suggested_value) + '</span>';
             }
             html += '</div>';
+            html += '<button class="rec-apply-btn" data-idx="' + idx + '">Mark as Applied</button>';
+          }
+          html += '<button class="rec-dismiss-btn" data-dismiss-title="' + escHtml(rec.title || '') + '">Dismiss</button>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      // ── Applied recommendations ────────────────────────────────
+      if (appliedRecs.length > 0) {
+        html += '<div class="anls-section-title" style="margin-top:8px;">Applied Recommendations</div>';
+        html += '<div class="anls-rec-list">';
+        appliedRecs.forEach(function(item) {
+          var rec = item.rec, change = item.change;
+          html += '<div class="rec-card rec-card-applied">';
+          html += '<div class="rec-card-title">' + escHtml(rec.title || '') + '</div>';
+          html += '<div class="rec-card-explanation">' + escHtml(rec.explanation || '') + '</div>';
+          if (rec.setting_name) {
+            html += '<div class="rec-card-setting">';
+            html += '<span class="rec-card-setting-label">Setting</span>';
+            html += '<span class="rec-card-setting-name">' + escHtml(rec.setting_name) + '</span>';
+            if (change.actualValue) {
+              html += '<span class="rec-card-arrow">&rarr;</span>';
+              html += '<span class="rec-card-setting-value">' + escHtml(change.actualValue) + '</span>';
+            }
+            html += '</div>';
+            html += '<div class="rec-applied-badge">&#10003; Applied</div>';
           }
           html += '</div>';
         });
@@ -1652,21 +1773,124 @@
       }
 
       // ── Maintenance alerts ─────────────────────────────────────
+      var visibleAlerts   = alerts.filter(function(a) { return !_dismissedTitles.has(a.title); });
+      var dismissedAlerts = alerts.filter(function(a) { return  _dismissedTitles.has(a.title); });
+
       html += '<div class="anls-section-title" style="margin-top:8px;">Maintenance Alerts</div>';
-      if (alerts.length === 0) {
+      if (visibleAlerts.length === 0) {
         html += '<div class="anls-empty" style="padding:20px 0;">No maintenance alerts detected.</div>';
       } else {
         html += '<div class="anls-alert-list">';
-        alerts.forEach(function(alert) {
+        visibleAlerts.forEach(function(alert) {
           html += '<div class="alert-card">';
           html += '<div class="alert-card-title">' + escHtml(alert.title || '') + '</div>';
           html += '<div class="alert-card-detail">' + escHtml(alert.detail || '') + '</div>';
+          html += '<button class="rec-dismiss-btn" data-dismiss-title="' + escHtml(alert.title || '') + '">Dismiss</button>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      // ── Dismissed items ────────────────────────────────────────
+      var allDismissed = dismissedFromRec.map(function(item) { return item.rec.title; })
+                        .concat(dismissedAlerts.map(function(a) { return a.title; }));
+      if (allDismissed.length > 0) {
+        html += '<div class="anls-section-title dismissed-section-title" style="margin-top:8px;">Dismissed (' + allDismissed.length + ')</div>';
+        html += '<div class="dismissed-list">';
+        allDismissed.forEach(function(title) {
+          html += '<div class="dismissed-entry">';
+          html += '<span class="dismissed-title">' + escHtml(title) + '</span>';
+          html += '<button class="dismiss-restore-btn" data-dismiss-title="' + escHtml(title) + '">Restore</button>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      // ── Change Log ─────────────────────────────────────────────
+      html += '<div class="anls-section-title" style="margin-top:8px;">Change Log</div>';
+      if (_appliedChanges.length === 0) {
+        html += '<div class="anls-empty">No changes recorded yet.</div>';
+      } else {
+        html += '<div class="change-log-list">';
+        _appliedChanges.forEach(function(ch, ci) {
+          var d = new Date(ch.appliedAt);
+          var dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                      + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          var settingStr = escHtml(ch.settingName) + ': recommended '
+            + (ch.recommendedValue !== null ? escHtml(String(ch.recommendedValue)) : '—')
+            + ' &rarr; set to ' + escHtml(ch.actualValue);
+          html += '<div class="change-log-entry">';
+          html += '<div class="change-log-date">' + escHtml(dateStr) + '</div>';
+          html += '<div class="change-log-body">';
+          html += '<div class="change-log-title">' + escHtml(ch.title) + '</div>';
+          html += '<div class="change-log-setting">' + settingStr + '</div>';
+          html += '</div>';
+          html += '<button class="change-log-undo" data-ci="' + ci + '">Remove</button>';
           html += '</div>';
         });
         html += '</div>';
       }
 
       panel.innerHTML = html;
+
+      // ── Wire Mark as Applied buttons ───────────────────────────
+      panel.querySelectorAll('.rec-apply-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var rec = recs[+btn.dataset.idx];
+          // Split "22,0 °C" into numeric part "22,0" and unit "°C" so the
+          // prompt default contains only the number — user need not type the unit.
+          var sugRaw = rec.suggested_value || '';
+          var unitMatch = sugRaw.match(/^([0-9.,\-]+)\s*(.+)$/);
+          var sugNum  = unitMatch ? unitMatch[1].trim() : sugRaw.trim();
+          var sugUnit = unitMatch ? unitMatch[2].trim() : '';
+          var actual = prompt(
+            'What value did you set for "' + rec.setting_name + '"?' +
+            (sugUnit ? '\n(Recommended: ' + sugRaw + ' — enter the number, unit will be added)' : '\n(Recommended: ' + (sugRaw || '—') + ')'),
+            sugNum
+          );
+          if (actual === null) return;
+          var trimmed = actual.trim();
+          // Re-attach unit if user entered a bare number and the recommended value had one
+          var stored = (sugUnit && !trimmed.includes(sugUnit)) ? trimmed + ' ' + sugUnit : trimmed;
+          _appliedChanges.unshift({
+            appliedAt: Date.now(),
+            title: rec.title,
+            settingName: rec.setting_name,
+            recommendedValue: rec.suggested_value || null,
+            actualValue: stored
+          });
+          saveAppliedChanges();
+          renderAnalysisPanel();
+          showToast('Change recorded.', 'success', 3000);
+        });
+      });
+
+      // ── Wire Remove buttons ────────────────────────────────────
+      panel.querySelectorAll('.change-log-undo').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          _appliedChanges.splice(+btn.dataset.ci, 1);
+          saveAppliedChanges();
+          renderAnalysisPanel();
+        });
+      });
+
+      // ── Wire Dismiss buttons ───────────────────────────────────
+      panel.querySelectorAll('.rec-dismiss-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          _dismissedTitles.add(btn.dataset.dismissTitle);
+          saveDismissedTitles();
+          renderAnalysisPanel();
+        });
+      });
+
+      // ── Wire Restore buttons ───────────────────────────────────
+      panel.querySelectorAll('.dismiss-restore-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          _dismissedTitles.delete(btn.dataset.dismissTitle);
+          saveDismissedTitles();
+          renderAnalysisPanel();
+        });
+      });
     }
 
     // ─── Navigation guard ─────────────────────────────────────────
@@ -3432,6 +3656,242 @@
       aiNote.textContent = 'API key stored locally in your browser only.';
       body.appendChild(aiNote);
 
+      // ── System Configuration section ─────────────────────────────────────────
+      const HEATER_MODELS = [
+        { group: 'Pearl' },
+        { label: 'Pearl 4 kW',  value: 'Pearl_4',  kw: 4 },
+        { label: 'Pearl 6 kW',  value: 'Pearl_6',  kw: 6 },
+        { group: 'Smart XS' },
+        { label: 'Smart XS 6 kW', value: 'SmartXS_6', kw: 6 },
+        { label: 'Smart XS 8 kW', value: 'SmartXS_8', kw: 8 },
+        { group: 'Pellematic Compact' },
+        { label: 'Pellematic Compact 6 kW',  value: 'PelleCompact_6',  kw: 6 },
+        { label: 'Pellematic Compact 8 kW',  value: 'PelleCompact_8',  kw: 8 },
+        { label: 'Pellematic Compact 10 kW', value: 'PelleCompact_10', kw: 10 },
+        { group: 'Pellematic' },
+        { label: 'Pellematic 8 kW',  value: 'Pellematic_8',  kw: 8 },
+        { label: 'Pellematic 10 kW', value: 'Pellematic_10', kw: 10 },
+        { label: 'Pellematic 12 kW', value: 'Pellematic_12', kw: 12 },
+        { label: 'Pellematic 15 kW', value: 'Pellematic_15', kw: 15 },
+        { label: 'Pellematic 18 kW', value: 'Pellematic_18', kw: 18 },
+        { label: 'Pellematic 20 kW', value: 'Pellematic_20', kw: 20 },
+        { label: 'Pellematic 25 kW', value: 'Pellematic_25', kw: 25 },
+        { label: 'Pellematic 32 kW', value: 'Pellematic_32', kw: 32 },
+        { group: 'P4 Premium' },
+        { label: 'P4 Premium 15 kW', value: 'P4_15', kw: 15 },
+        { label: 'P4 Premium 20 kW', value: 'P4_20', kw: 20 },
+        { label: 'P4 Premium 25 kW', value: 'P4_25', kw: 25 },
+        { label: 'P4 Premium 32 kW', value: 'P4_32', kw: 32 },
+        { label: 'P4 Premium 40 kW', value: 'P4_40', kw: 40 },
+        { label: 'P4 Premium 48 kW', value: 'P4_48', kw: 48 },
+        { label: 'P4 Premium 56 kW', value: 'P4_56', kw: 56 },
+        { group: 'Pellematic Condens' },
+        { label: 'Pellematic Condens 20 kW', value: 'PelleCondens_20', kw: 20 },
+        { label: 'Pellematic Condens 25 kW', value: 'PelleCondens_25', kw: 25 },
+        { label: 'Pellematic Condens 32 kW', value: 'PelleCondens_32', kw: 32 },
+        { label: 'Pellematic Condens 45 kW', value: 'PelleCondens_45', kw: 45 },
+        { group: 'P4 Turbo' },
+        { label: 'P4 Turbo 40 kW', value: 'P4T_40', kw: 40 },
+        { label: 'P4 Turbo 50 kW', value: 'P4T_50', kw: 50 },
+        { label: 'P4 Turbo 60 kW', value: 'P4T_60', kw: 60 },
+        { label: 'P4 Turbo 75 kW', value: 'P4T_75', kw: 75 },
+      ];
+      const BUFFER_PRESETS = [
+        { label: '— Select model —',                    value: '',               volumeL: null },
+        { label: 'Pellaqua 200 (200 L)',                value: 'Pellaqua_200',   volumeL: 200  },
+        { label: 'Pellaqua 300 (300 L)',                value: 'Pellaqua_300',   volumeL: 300  },
+        { label: 'Pellaqua 500 (500 L)',                value: 'Pellaqua_500',   volumeL: 500  },
+        { label: 'Pellaqua 750 (750 L)',                value: 'Pellaqua_750',   volumeL: 750  },
+        { label: 'Pellaqua 1000 (1000 L)',              value: 'Pellaqua_1000',  volumeL: 1000 },
+        { label: 'Pellaqua 1500 (1500 L)',              value: 'Pellaqua_1500',  volumeL: 1500 },
+        { label: 'Pellaqua 2000 (2000 L)',              value: 'Pellaqua_2000',  volumeL: 2000 },
+        { label: 'Pellaqua Combi 800 (800 L + DHW)',    value: 'PellaquaC_800',  volumeL: 800  },
+        { label: 'Pellaqua Combi 1000 (1000 L + DHW)',  value: 'PellaquaC_1000', volumeL: 1000 },
+      ];
+
+      const inpStyle = 'width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid var(--sep-strong); border-radius:var(--r-sm); background:var(--bg-l1); color:var(--text-1); font-size:13px; font-family:var(--font);';
+      const lblStyle = 'display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:4px;';
+
+      const sysSection = document.createElement('div');
+      sysSection.style.cssText = 'border-top:1px solid var(--sep); margin-top:16px; padding-top:14px;';
+
+      const sysTitleEl = document.createElement('div');
+      sysTitleEl.style.cssText = 'font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-3); margin-bottom:12px;';
+      sysTitleEl.textContent = 'System Configuration';
+      sysSection.appendChild(sysTitleEl);
+
+      // — Heater model —
+      const htLbl = document.createElement('label');
+      htLbl.style.cssText = lblStyle + 'margin-top:0;';
+      htLbl.textContent = 'Heater model';
+      sysSection.appendChild(htLbl);
+
+      const heaterSel = document.createElement('select');
+      heaterSel.id = 'system-heater-select';
+      heaterSel.style.cssText = inpStyle + 'margin-bottom:8px;';
+      const blankOpt = document.createElement('option');
+      blankOpt.value = ''; blankOpt.textContent = '— Select model —';
+      heaterSel.appendChild(blankOpt);
+      var curGroup = null;
+      HEATER_MODELS.forEach(function(m) {
+        if (m.group !== undefined) {
+          curGroup = document.createElement('optgroup');
+          curGroup.label = 'ÖkoFen ' + m.group;
+          heaterSel.appendChild(curGroup);
+        } else {
+          var o = document.createElement('option');
+          o.value = m.value; o.textContent = m.label; o.dataset.kw = m.kw;
+          (curGroup || heaterSel).appendChild(o);
+        }
+      });
+      heaterSel.value = _systemConfig.heaterModel || '';
+      sysSection.appendChild(heaterSel);
+
+      const kWRow = document.createElement('div');
+      kWRow.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px;';
+      const kWLbl = document.createElement('label');
+      kWLbl.style.cssText = 'font-size:12px; font-weight:500; color:var(--text-2); white-space:nowrap;';
+      kWLbl.textContent = 'Rated output';
+      const kWInp = document.createElement('input');
+      kWInp.id = 'system-heater-kw'; kWInp.type = 'number'; kWInp.min = '1'; kWInp.max = '200'; kWInp.step = '1';
+      kWInp.placeholder = 'kW'; kWInp.value = _systemConfig.heaterPowerKw != null ? String(_systemConfig.heaterPowerKw) : '';
+      kWInp.style.cssText = 'width:72px; padding:5px 8px; border:1px solid var(--sep-strong); border-radius:var(--r-sm); background:var(--bg-l1); color:var(--text-1); font-size:13px; font-family:var(--font);';
+      const kWUnit = document.createElement('span');
+      kWUnit.style.cssText = 'font-size:12px; color:var(--text-3);'; kWUnit.textContent = 'kW';
+      kWRow.appendChild(kWLbl); kWRow.appendChild(kWInp); kWRow.appendChild(kWUnit);
+      sysSection.appendChild(kWRow);
+      heaterSel.addEventListener('change', function() {
+        var o = heaterSel.options[heaterSel.selectedIndex];
+        kWInp.value = o && o.dataset.kw ? o.dataset.kw : '';
+      });
+
+      // — Buffer tank —
+      const bufLbl = document.createElement('label');
+      bufLbl.style.cssText = lblStyle;
+      bufLbl.textContent = 'Buffer tank';
+      sysSection.appendChild(bufLbl);
+
+      var activeBufType = _systemConfig.bufferType || 'none';
+      const BUF_TYPES = [{ label: 'ÖkoFen', value: 'oekofen' }, { label: 'Custom', value: 'custom' }, { label: 'None', value: 'none' }];
+      const bufSegRow = document.createElement('div');
+      bufSegRow.style.cssText = 'display:flex; margin-bottom:8px;';
+      var bufBtns = {};
+      BUF_TYPES.forEach(function(bt, bi) {
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.textContent = bt.label; btn.dataset.bufType = bt.value;
+        var br = bi === 0 ? 'var(--r-sm) 0 0 var(--r-sm)' : bi === BUF_TYPES.length - 1 ? '0 var(--r-sm) var(--r-sm) 0' : '0';
+        btn.style.cssText = 'flex:1; padding:5px 0; font-size:12px; font-family:var(--font); border:1px solid var(--sep-strong); cursor:pointer; border-radius:' + br + '; transition:background 0.15s, color 0.15s;';
+        if (bi > 0) btn.style.borderLeft = 'none';
+        var isActive = bt.value === activeBufType;
+        btn.style.background = isActive ? 'var(--blue)' : 'none';
+        btn.style.color      = isActive ? '#fff' : 'var(--text-2)';
+        if (isActive) btn.style.borderColor = 'var(--blue)';
+        bufBtns[bt.value] = btn;
+        bufSegRow.appendChild(btn);
+      });
+      sysSection.appendChild(bufSegRow);
+
+      const oekoRow = document.createElement('div');
+      oekoRow.id = 'buf-oekofen-row';
+      oekoRow.style.display = activeBufType === 'oekofen' ? '' : 'none';
+      const bufPresetSel = document.createElement('select');
+      bufPresetSel.id = 'system-buffer-preset';
+      bufPresetSel.style.cssText = inpStyle + 'margin-bottom:10px;';
+      BUFFER_PRESETS.forEach(function(bp) {
+        var o = document.createElement('option');
+        o.value = bp.value; o.textContent = bp.label;
+        if (bp.volumeL) o.dataset.volumeL = bp.volumeL;
+        bufPresetSel.appendChild(o);
+      });
+      bufPresetSel.value = _systemConfig.bufferPreset || '';
+      oekoRow.appendChild(bufPresetSel);
+      sysSection.appendChild(oekoRow);
+
+      const customRow = document.createElement('div');
+      customRow.id = 'buf-custom-row';
+      customRow.style.display = activeBufType === 'custom' ? '' : 'none';
+      const customBufWrap = document.createElement('div');
+      customBufWrap.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:10px;';
+      const customVolInp = document.createElement('input');
+      customVolInp.id = 'system-buffer-custom-vol'; customVolInp.type = 'number'; customVolInp.min = '1'; customVolInp.step = '1';
+      customVolInp.placeholder = 'e.g. 750'; customVolInp.value = _systemConfig.bufferVolumeL != null ? String(_systemConfig.bufferVolumeL) : '';
+      customVolInp.style.cssText = 'width:100px; padding:5px 8px; border:1px solid var(--sep-strong); border-radius:var(--r-sm); background:var(--bg-l1); color:var(--text-1); font-size:13px; font-family:var(--font);';
+      const litresLbl = document.createElement('span');
+      litresLbl.style.cssText = 'font-size:12px; color:var(--text-3);'; litresLbl.textContent = 'litres';
+      customBufWrap.appendChild(customVolInp); customBufWrap.appendChild(litresLbl);
+      customRow.appendChild(customBufWrap);
+      sysSection.appendChild(customRow);
+
+      BUF_TYPES.forEach(function(bt) {
+        bufBtns[bt.value].addEventListener('click', function() {
+          activeBufType = bt.value;
+          BUF_TYPES.forEach(function(b2) {
+            var b = bufBtns[b2.value];
+            var active = b2.value === bt.value;
+            b.style.background  = active ? 'var(--blue)' : 'none';
+            b.style.color       = active ? '#fff' : 'var(--text-2)';
+            b.style.borderColor = active ? 'var(--blue)' : 'var(--sep-strong)';
+          });
+          oekoRow.style.display    = activeBufType === 'oekofen' ? '' : 'none';
+          customRow.style.display  = activeBufType === 'custom'  ? '' : 'none';
+        });
+      });
+
+      // — Sensor mapping —
+      const sensorSep = document.createElement('div');
+      sensorSep.style.cssText = 'border-top:1px solid var(--sep); margin-top:4px; padding-top:12px;';
+      const sensorTitleEl = document.createElement('div');
+      sensorTitleEl.style.cssText = 'font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-3); margin-bottom:10px;';
+      sensorTitleEl.textContent = 'Sensor Mapping';
+      sensorSep.appendChild(sensorTitleEl);
+
+      const sensorNote = document.createElement('p');
+      sensorNote.style.cssText = 'font-size:11px; color:var(--text-3); margin:0 0 10px;';
+      sensorNote.textContent = 'Override which CSV column maps to each sensor. Leave on Auto-detect unless a column is not being found. Takes effect on next data import.';
+      sensorSep.appendChild(sensorNote);
+
+      const selStyle = inpStyle + 'margin-bottom:8px;';
+      const smTable = document.createElement('div');
+      smTable.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; align-items:center;';
+
+      SENSOR_TYPES.forEach(function(st) {
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:12px; color:var(--text-2); white-space:nowrap;';
+        lbl.textContent = st.label;
+        smTable.appendChild(lbl);
+
+        const sel = document.createElement('select');
+        sel.id = 'sensor-map-' + st.key;
+        sel.style.cssText = 'width:100%; padding:5px 8px; border:1px solid var(--sep-strong); border-radius:var(--r-sm); background:var(--bg-l1); color:var(--text-1); font-size:12px; font-family:var(--font); margin-bottom:4px;';
+        const autoOpt = document.createElement('option');
+        autoOpt.value = ''; autoOpt.textContent = '— Auto-detect (' + st.hint + ')';
+        sel.appendChild(autoOpt);
+        sel.value = (_systemConfig.sensorMapping && _systemConfig.sensorMapping[st.key]) || '';
+        smTable.appendChild(sel);
+      });
+      sensorSep.appendChild(smTable);
+
+      // Fetch available columns from the most recent CSV and populate dropdowns
+      if (window.location.protocol !== 'file:') {
+        fetch('/csv-columns').then(function(r) { return r.json(); }).then(function(data) {
+          var cols = data.columns || [];
+          SENSOR_TYPES.forEach(function(st) {
+            var sel = document.getElementById('sensor-map-' + st.key);
+            if (!sel) return;
+            var savedVal = (_systemConfig.sensorMapping && _systemConfig.sensorMapping[st.key]) || '';
+            cols.forEach(function(col) {
+              var opt = document.createElement('option');
+              opt.value = col; opt.textContent = col;
+              sel.appendChild(opt);
+            });
+            sel.value = savedVal; // re-apply after options added
+          });
+        }).catch(function() {});
+      }
+
+      sysSection.appendChild(sensorSep);
+      body.appendChild(sysSection);
+
       aiSelect.addEventListener('change', () => {
         const isClaude = aiSelect.value === 'claude';
         aiCredentialLabel.textContent = isClaude ? 'Claude API Key' : 'Ollama Endpoint URL';
@@ -3470,9 +3930,35 @@
         const ip  = document.getElementById('settings-ip').value.trim();
         const port = document.getElementById('settings-port').value.trim();
         const pass = document.getElementById('settings-password').value.trim();
-        saveSettings(ip, port, pass);
         const aiBackend = document.getElementById('ai-backend-select').value;
         const aiCredential = document.getElementById('ai-credential').value.trim();
+
+        // Collect system config before saveSettings (it reads sensorMapping from _systemConfig)
+        const htSel    = document.getElementById('system-heater-select');
+        const htKwEl   = document.getElementById('system-heater-kw');
+        const bufPrSel = document.getElementById('system-buffer-preset');
+        const cusVolEl = document.getElementById('system-buffer-custom-vol');
+        const htOpt    = htSel ? htSel.options[htSel.selectedIndex] : null;
+        const htModel  = htSel ? htSel.value : '';
+        const htLabel  = (htOpt && htModel) ? 'ÖkoFen ' + htOpt.textContent : '';
+        const htKw     = htKwEl && htKwEl.value ? parseFloat(htKwEl.value) : null;
+        var bufPreset = '', bufVolL = null, bufLabel = '';
+        if (activeBufType === 'oekofen' && bufPrSel) {
+          bufPreset = bufPrSel.value;
+          const bOpt = bufPrSel.options[bufPrSel.selectedIndex];
+          bufLabel = bOpt && bufPreset ? 'ÖkoFen ' + bOpt.textContent : '';
+          bufVolL  = bOpt && bOpt.dataset.volumeL ? parseInt(bOpt.dataset.volumeL) : null;
+        } else if (activeBufType === 'custom' && cusVolEl && cusVolEl.value) {
+          bufVolL  = parseInt(cusVolEl.value);
+          bufLabel = 'Custom (' + bufVolL + ' L)';
+        }
+        saveSystemConfig({
+          heaterModel: htModel, heaterLabel: htLabel, heaterPowerKw: htKw,
+          bufferType: activeBufType, bufferPreset: bufPreset, bufferLabel: bufLabel, bufferVolumeL: bufVolL,
+          sensorMapping: (function() { var sm = {}; SENSOR_TYPES.forEach(function(st) { var el = document.getElementById('sensor-map-' + st.key); sm[st.key] = el ? el.value : ''; }); return sm; })()
+        });
+
+        saveSettings(ip, port, pass);
         saveAiSettings(aiBackend, aiCredential);
         closeSettingsModal();
         showToast('Settings saved.', 'info', 2000);
@@ -4038,6 +4524,9 @@
     loadBaseline();      // BASE-01/02: load stored baseline on startup
     loadAiSettings();    // AICO-01: load stored AI backend settings on startup
     loadLastAnalysis();  // ANLS: restore last analysis result across reloads
+    loadAppliedChanges();   // ANLS: restore applied changes log across reloads
+    loadDismissedTitles();  // ANLS: restore dismissed items across reloads
+    loadSystemConfig();     // SYS: restore heater/buffer/sensor config across reloads
     if (_aiSettings.credential) showRunAnalysisBtn(); // AICO-04: show button if credential already saved
     initOnboardingPrompt();
     initBaselinePrompt();

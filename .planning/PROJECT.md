@@ -2,88 +2,91 @@
 
 ## What This Is
 
-A web-based interactive chart viewer for OekoFEN pellet heater CSV data. Users drag & drop a daily CSV file exported by their heater and explore temperature curves, pump states, and pellet unit behavior through interactive charts with zoom, parameter toggling, cursor inspection, and a minimap overview. Replaces the static PNG graphs the heater generates, which overlay all parameters and make it impossible to isolate specific heating events.
+A web-based tool for OekoFEN pellet heater owners to visualize daily operation data and get AI-powered efficiency recommendations. Users drag & drop (or auto-fetch) daily CSV logs, explore interactive temperature/pump/pellet charts, review multi-day statistics, and trigger an AI analysis that compares operating patterns against their heater's baseline settings to surface specific tuning recommendations.
 
-Shipped as a single self-contained `index.html` — no build step, no server, no dependencies beyond two vendored libraries (uPlot 1.6.32 + PapaParse 5.5.3).
+Runs via `python server.py` + browser at `http://localhost:8080`. Single `index.html` + `server.py` — no build step, no cloud dependency.
 
 ## Core Value
 
-Enable the user to visually diagnose why and when the heater fires by interactively exploring temperature curves, pump states, and pellet unit behavior across a single day's data.
+Enable the user to visually diagnose why and when the heater fires — and get actionable AI recommendations for reducing pellet consumption — by interactively exploring temperature curves, pump states, and pellet unit behavior across accumulated daily data.
 
 ## Requirements
 
 ### Validated
 
-- ✓ Load OekoFEN CSV via drag & drop or file picker (client-side only, no server) — v1.0
+- ✓ Load OekoFEN CSV via drag & drop or file picker — v1.0
 - ✓ Parse semicolon-delimited CSV with German locale decimals and Windows-1252 encoding — v1.0
-- ✓ Display interactive time-series charts for selected parameters against a HH:MM time axis — v1.0
-- ✓ Pre-built parameter views grouped by system (Boiler, Heating Circuit, Hot Water, Buffer, Pellet Unit, All) — v1.0
-- ✓ Custom parameter selection beyond pre-built views via picker modal — v1.0
-- ✓ Show/hide individual parameters on the chart via legend click toggle — v1.0
-- ✓ Zoom via click-drag (select time range) and scroll wheel (centered on cursor) — v1.0
-- ✓ Cursor inspection showing values of all visible series at current time position — v1.0
-- ✓ Reset zoom to full day view (button + double-click) — v1.0
-- ✓ Full-day minimap overview with current zoom range highlighted — v1.0
-- ✓ localStorage persistence of active view and visible series across page reloads — v1.0
-- ✓ English UI with original German CSV parameter names preserved — v1.0
+- ✓ Display interactive time-series charts with zoom, cursor inspection, minimap, parameter toggling — v1.0
+- ✓ Pre-built diagnostic views (Boiler, Heating Circuit, Hot Water, Buffer, Pellet Unit, All) + custom picker — v1.0
+- ✓ Settings panel for heater connection (IP, Port, API Password) with localStorage persistence — v1.1
+- ✓ Direct CSV download from heater HTTP API for any log period (Today/Yesterday/Log 0–3) — v1.1
+- ✓ Python proxy server (server.py) bypasses heater CORS; start.bat launcher — v1.1
+- ✓ Full error handling: file:// origin, heater unreachable, wrong password, rate limit — v1.1
+- ✓ Multi-day CSV history in IndexedDB (fetch or upload); auto-fetch schedule for always-on VM — v1.2
+- ✓ Heater settings .txt baseline loaded and parsed into structured sections — v1.2
+- ✓ Per-day stats (starts, runtime, pellet, outdoor temp) with multi-day trend; Statistics panel — v1.2
+- ✓ AI backend (Ollama/Claude API) with structured context payload; OekoFEN expert system prompt — v1.2
+- ✓ Analysis panel: prioritized recommendations (setting + value chips) + maintenance alerts + metadata — v1.2
 
-### Active (v1.1)
+### Active (v1.3 candidates)
 
-- [ ] Settings panel to configure heater connection (IP, Port, API Password) — v1.1
-- [ ] Direct CSV download from heater HTTP API (`log_today`, `log_yesterday`, `log0`–`log3`) — v1.1
-- [ ] Dropdown on drop zone to select which log period to download — v1.1
+- [ ] Sensor mapping UI: dynamic table showing all sensor types with column selector (currently text input only)
+- [ ] GET /csv-columns endpoint: read most recent CSV headers to populate sensor mapping dropdowns
+- [ ] Heater model selector: add Pellematic Condens series (20/25/32/45 kW) to Settings
+- [ ] Buffer preset names: fix from PES_xxx to Pellaqua xxx (correct ÖkoFEN product name)
+- [ ] Applied changes tracking: persistent log of user-confirmed setting changes (partially implemented as side feature in v1.2)
 
 ### Out of Scope
 
-- Server-side processing — everything runs in the browser
-- Multi-day comparison / loading multiple CSVs simultaneously — single day focus, browser tabs for comparison
-- Data editing or annotations — read-only visualization; browser screenshot for sharing
-- WPF desktop application — replaced by web approach
-- Real-time data streaming from the heater — file-based only
-- Unit conversion (°C to °F) — target user is European, original units correct
-- User accounts / login — no server; localStorage is sufficient for single-user tool
+| Feature | Reason |
+|---------|--------|
+| HTTPS / SSL for heater connection | Embedded firmware — no TLS control |
+| Multiple heater profiles | Single-user, single-heater tool |
+| Auto-refresh / polling | Rate limit makes polling impractical |
+| Writing settings back to heater | Heater has no write API |
+| Multi-season / year-over-year comparison | Out of scope until multi-day history proven useful |
+| Öko Modus recommendations | Known to underperform; excluded from AI knowledge base |
+| `.save` ZIP as data source | Duplicates what the API provides |
+| Offline mode | server.py is required; no standalone client mode |
 
 ## Context
 
-**v1.0 shipped 2026-02-21.**
+**v1.2 shipped 2026-02-28.**
 
-- Deliverable: `index.html` — 2,542 lines, fully self-contained
-- Tech stack: Vanilla JS + HTML/CSS, uPlot 1.6.32 (canvas charting), PapaParse 5.5.3 (CSV)
+- Deliverable: `index.html` (4,560 LOC) + `server.py` (1,230 LOC)
+- Tech stack: Vanilla JS + HTML/CSS, uPlot 1.6.32, PapaParse 5.5.3, Python 3 + SQLite
+- AI backends: Ollama (local, llama3.2) + Claude API (claude-haiku-4-5)
+- Storage: IndexedDB (CSV history), localStorage (settings/baseline/AI config/last analysis), SQLite stats.db
 - Data: OekoFEN CSV — semicolon-delimited, ~70 columns, 1,440 rows/day, Windows-1252 encoding
-- Column categories: outside temp (AT), boiler (KT), heating circuit (HK1), hot water (WW1), buffer (PU1), pellet unit (PE1)
-- Mix of continuous values (temperatures °C, percentages) and discrete states (pump on/off, binary 0/1)
+
+**Known issues / tech debt:**
+- `degree_day_consumption` always 0.0 until real pellet counter increments are stored (CSV window issue, not a bug)
+- `flow_return_delta` computed but hidden — HK1 RT sensor disabled via firmware
+- Sensor mapping UI is a single text input; full dropdown table deferred to v1.3
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Web-based instead of WPF | Simpler deployment, cross-platform, rich charting ecosystem | ✓ Good — works in any browser, zero install |
-| Client-side only (no server) | Simplest possible deployment — just open a file | ✓ Good — users open `index.html` directly |
-| English UI | User preference, German parameter names preserved from CSV | ✓ Good — clean compromise |
-| uPlot for charting | Fast canvas rendering, lightweight, no framework dependency | ✓ Good — renders 70×1440 points without lag |
-| Single HTML file (no build step) | Zero tooling overhead, easy distribution | ✓ Good — deploy by copying one file |
-| Dual zoom (drag + scroll wheel) | Precise range selection and quick zoom both needed for diagnosis | ✓ Good — both modes heavily used |
-| Dual Y-axis (continuous left, binary right) | Binary 0/1 states on same scale as temperatures would be invisible | ✓ Good — BR burner band clearly visible |
-| Pre-built views + custom selection | Smart defaults for common scenarios, flexibility for edge cases | ✓ Good — All/Boiler/HK1/WW1/PU1/PE1 covers 90% of use cases |
-| Event delegation for legend clicks | Single listener on parent, survives uPlot DOM rebuilds | ✓ Good — no listener leak issues |
-| Build chart with all columns, hide non-defaults | Picker can show/hide without chart recreate | ✓ Good — zero-latency parameter add/remove |
-| localStorage for persistence | No server; survives page reload for same file | ✓ Good — prefs validated against loaded file on restore |
+| Web-based instead of WPF | Simpler deployment, cross-platform | ✓ Good |
+| Single HTML file + server.py | Zero tooling; server needed only for CORS proxy | ✓ Good |
+| uPlot for charting | Fast canvas, lightweight, no framework | ✓ Good |
+| IndexedDB for multi-day storage | localStorage too small for full-day CSVs | ✓ Good |
+| SQLite stats engine in server.py | Aggregation in Python; browser gets compact JSON | ✓ Good |
+| AI payload = aggregated stats only | Never sends raw CSV; context size manageable | ✓ Good |
+| Ollama + Claude API dual backend | Local privacy option + cloud quality option | ✓ Good |
+| parseBaselineTxt indent-aware parser | OekoFEN .txt has nested sub-sections | ✓ Good |
+| _lastAnalysis persisted to localStorage | Analysis survives page reload | ✓ Good |
+| escHtml() for AI content rendering | XSS safety for innerHTML with AI-generated text | ✓ Good |
+| OekoFEN heater has no CORS headers (empirical) | Direct browser fetch impossible; proxy required | ✓ Confirmed |
+| Öko Modus excluded from system prompt | Community reports it underperforms | ✓ Good |
 
 ## Constraints
 
-- **Client-side only**: Must work by opening an HTML file in a browser — no Node.js server, no build step required at runtime
-- **File format**: Must handle the specific OekoFEN CSV format (semicolon delimiter, German decimals, Windows-1252 encoding with special characters like °, ä, ö, ü)
-- **Performance**: ~1440 data points per day (1-minute intervals × 24 hours) across ~70 columns — must render smoothly
-
-## Current Milestone: v1.2 AI Heater Analysis
-
-**Goal:** Enable users to get actionable, AI-powered recommendations for pellet savings by analyzing multi-day usage data against their heater's baseline settings.
-
-**Target features:**
-- Multi-day CSV history stored in IndexedDB (via API fetch or manual upload); auto-fetch schedule for always-on VM use
-- Heater settings baseline loaded from the `.txt` USB export, parsed into structured sections
-- AI backend configurable as Ollama (local) or Claude API (cloud); system prompt encodes OekoFEN expert knowledge
-- Dedicated analysis panel: prioritized recommendations (setting name + suggested value) and maintenance alerts
+- **Server required**: Must run via `python server.py`; browser-only mode not viable (CORS from heater)
+- **File format**: OekoFEN CSV — semicolon delimiter, German decimals, Windows-1252 encoding
+- **Performance**: ~1440 rows/day × ~70 columns — must render smoothly
+- **Privacy**: Raw CSV rows never sent to AI; only aggregated stats + parsed settings
 
 ---
-*Last updated: 2026-02-25 — v1.2 started*
+*Last updated: 2026-02-28 after v1.2 milestone*
